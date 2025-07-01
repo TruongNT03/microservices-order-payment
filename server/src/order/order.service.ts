@@ -7,11 +7,13 @@ import {
   Res,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { Response } from 'express';
 import { ClientProxy, Payload } from '@nestjs/microservices';
+import { EventService } from 'src/event/event.service';
+import { EventsGateway } from 'src/event/events.gateway';
 
 @Injectable()
 export class OrderService {
@@ -20,6 +22,7 @@ export class OrderService {
     private readonly orderRepo: Repository<Order>,
     @Inject('PAYMENT_SERVICE')
     private paymentClient: ClientProxy,
+    private readonly eventGateway: EventsGateway,
   ) {}
 
   async create(dto: CreateOrderDto, @Res() res: Response) {
@@ -43,6 +46,7 @@ export class OrderService {
       setTimeout(async () => {
         order.status = 'delivered';
         await this.orderRepo.save(order);
+        this.eventGateway.emitOrderStatusUpdate();
       }, 5000);
       return res.status(201).json({
         message: 'Tạo mới order thành công!',
@@ -68,11 +72,31 @@ export class OrderService {
     });
   }
 
-  async getAll(page: number, limit: number, @Res() res: Response) {
+  async getAll(
+    page: number,
+    limit: number,
+    filter: string,
+    keyword: string,
+    @Res() res: Response,
+  ) {
+    const filterCondition =
+      filter === 'all'
+        ? {}
+        : {
+            status: filter,
+          };
+    const searchCondition = keyword
+      ? {
+          id: keyword,
+        }
+      : {};
     const skip = (page - 1) * limit;
-    const totalItem = await this.orderRepo.count();
+    const totalItem = await this.orderRepo.count({
+      where: { ...filterCondition },
+    });
     const totalPage = Math.ceil(totalItem / limit);
     const orders = await this.orderRepo.find({
+      where: filterCondition,
       order: { id: 'ASC' },
       take: limit,
       skip: skip,

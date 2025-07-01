@@ -31,9 +31,11 @@ export class OrderController {
   getAll(
     @Query('page', ParseIntPipe) page: number,
     @Query('limit', ParseIntPipe) limit: number,
+    @Query('filter') filter: string,
+    @Query('keyword') keyword: string,
     @Res() res: Response,
   ) {
-    this.orderService.getAll(page, limit, res);
+    this.orderService.getAll(page, limit, filter, keyword, res);
   }
 
   @Get('/:id')

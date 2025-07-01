@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import io from "socket.io-client";
 import {
   Table,
   TableBody,
@@ -31,6 +32,17 @@ import { useEffect, useState } from "react";
 import { getAll, create, cancel } from "@/services/Order";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface Order {
   id: number;
@@ -39,29 +51,107 @@ interface Order {
   product_id: number;
 }
 
+const listStatus = {
+  all: "All",
+  created: "Created",
+  confirmed: "Confirmed",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
+const socket = io("http://127.0.0.1:8080", {});
+
 const Order = () => {
   const [orders, setOrder] = useState<Array<Order>>([]);
-  const [page, setPage] = useState<number>(3);
+  const [page, setPage] = useState<number>(1);
   const [totalPage, setTotalPage] = useState<number>(1);
+  const [filter, setFiller] = useState<string>("all");
+  const [keyword, setKeyword] = useState<string>("");
+  const [PIN, setPIN] = useState<string>("");
   const featchData = async () => {
-    const response = await getAll({ page: page, limit: 10 });
+    const response = await getAll({
+      page: page,
+      limit: 10,
+      filter: filter,
+      keyword: keyword,
+    });
     setPage(response?.data.currentPage);
     setTotalPage(response?.data.totalPage);
     setOrder(response?.data.data);
+  };
+  useEffect(() => {
+    socket.on("connect", () => {});
+    socket.on("event", () => {
+      featchData();
+      toast("Event has been created", {
+        description: "Đơn hàng đã được vận chuyển!",
+        action: {
+          label: "Undo",
+          onClick: () => console.log("Undo"),
+        },
+      });
+    });
+  }, []);
+
+  const handleVariant = (status: string) => {
+    switch (status) {
+      case "created":
+        return "outline";
+        break;
+      case "confirmed":
+        return "default";
+        break;
+      case "delivered":
+        return "secondary";
+        break;
+      case "cancelled":
+        return "destructive";
+        break;
+      default:
+        return "default";
+        break;
+    }
   };
   const handleCancel = async (id: number) => {
     await cancel(id);
     featchData();
   };
+  const handleCreate = async () => {
+    await create(PIN);
+    featchData();
+  };
   useEffect(() => {
     featchData();
-  }, [page]);
+  }, [page, filter, keyword]);
   const Uppercase = (str: string): string => {
     return str.substring(0, 1).toUpperCase() + str.substring(1);
   };
   return (
     <div className="w-[800px] m-auto mt-[100px] border-[1px] rounded-xl p-5">
-      <div className="my-2 flex justify-end">
+      <div className="my-2 flex justify-between">
+        <Input
+          className="w-[400px]"
+          onChange={(e) => {
+            setKeyword(e.target.value);
+          }}
+        ></Input>
+        <Select
+          onValueChange={(value) => {
+            setFiller(value);
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filler" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Status</SelectLabel>
+              {Object.entries(listStatus).map((value) => (
+                <SelectItem value={value[0]}>{value[1]}</SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="default">Create Order</Button>
@@ -70,13 +160,16 @@ const Order = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>TẠO MỚI ORDER</AlertDialogTitle>
               <Label htmlFor="input">Nhập mã PIN để tạo order:</Label>
-              <Input id="input"></Input>
+              <Input
+                onChange={(e) => setPIN(e.target.value)}
+                id="input"
+              ></Input>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
-                  create();
+                  handleCreate();
                 }}
               >
                 Yes
@@ -97,11 +190,49 @@ const Order = () => {
           {orders.map((order) => (
             <TableRow key={order.id}>
               <TableCell className="font-medium">{order.id}</TableCell>
-              <TableCell>{Uppercase(order.status)}</TableCell>
+              <TableCell>
+                <Badge variant={handleVariant(order.status)}>
+                  {Uppercase(order.status)}
+                </Badge>
+              </TableCell>
               <TableCell align="center">
-                <Button variant="outline" className="cursor-pointer">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline">Details</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Chi tiết đơn hàng</AlertDialogTitle>
+                      <div className="text-sm flex gap-4">
+                        <div className="flex flex-col gap-4 flex-[1]">
+                          <div className="flex justify-between">
+                            Mã đơn: <span>{order.id}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            Mã SP: <span>{order.product_id}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            Trạng thái:{" "}
+                            <Badge variant={handleVariant(order.status)}>
+                              {Uppercase(order.status)}
+                            </Badge>
+                          </div>
+                        </div>
+                        <img
+                          className="max-w-[250px] rounded-xl flex-[1]"
+                          src="https://cdn.dealeraccelerate.com/noreserve/1/591/20046/1920x1440/1969-ford-mustang"
+                          alt=""
+                        />
+                      </div>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>OK</AlertDialogCancel>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                {/* <Button variant="outline" className="cursor-pointer">
                   Details
-                </Button>
+                </Button> */}
                 <Button
                   onClick={() => {
                     handleCancel(order.id);
