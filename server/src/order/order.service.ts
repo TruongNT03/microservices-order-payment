@@ -13,6 +13,7 @@ import { CreateOrderDto } from './dto/createOrder.dto';
 import { Response } from 'express';
 import { ClientProxy, Payload } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
+import { paginate } from 'src/commom/ultis/paginate';
 
 @Injectable()
 export class OrderService {
@@ -88,36 +89,41 @@ export class OrderService {
     keyword: string,
     orderBy: string,
     sortBy: string,
-  ) {
-    const filterCondition =
-      filter === 'all'
-        ? {}
-        : {
-            status: filter,
-          };
-    const searchCondition = keyword
-      ? {
-          id: keyword,
-        }
+  ): Promise<any> {
+    // Chi khoi tao chua tao dieu kien
+    const queryBuilder = this.orderRepo.createQueryBuilder('order');
+
+    // Tim kiem
+    // Theo thoi gian
+    queryBuilder.andWhere(
+      "TO_CHAR(order.createdAt, 'HH24:MI DD/MM/YYYY') LIKE :keyword",
+      {
+        keyword: `%${keyword}%`,
+      },
+    );
+    // Theo ID
+    queryBuilder.orWhere('CAST(order.id AS TEXT) LIKE :keyword', {
+      keyword: `%${keyword}%`,
+    });
+    // Theo status
+    queryBuilder.orWhere('CAST(order.status AS TEXT) LIKE :keyword', {
+      keyword: `%${keyword}%`,
+    });
+    // Sort
+    // Kiem tra cac collumn co the sort tranh bi SQL Injection
+    const allowSortField = ['id', 'createdAt', 'status'];
+    const orderSortField = allowSortField.includes(orderBy)
+      ? `order.${orderBy}`
+      : 'order.id';
+    queryBuilder.orderBy(
+      orderSortField,
+      sortBy.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
+    );
+    // Neu muon tim kiem tat ca
+    filter !== 'all'
+      ? queryBuilder.andWhere('order.status = :status', { status: filter })
       : {};
-    const orderCondition = { [orderBy]: sortBy.toLocaleUpperCase() };
-    const skip = (page - 1) * limit;
-    const totalItem = await this.orderRepo.count({
-      where: { ...filterCondition },
-    });
-    const totalPage = Math.ceil(totalItem / limit);
-    const orders = await this.orderRepo.find({
-      where: filterCondition,
-      order: orderCondition,
-      take: limit,
-      skip: skip,
-    });
-    return {
-      message: 'Thành công!',
-      data: orders,
-      currentPage: page,
-      totalPage: totalPage,
-    };
+    return paginate(queryBuilder, page, limit);
   }
 
   async getById(id: number) {

@@ -53,12 +53,15 @@ import {
 } from "@/components/ui/input-otp";
 
 import { Toaster, toast } from "sonner";
+import { convertDate } from "@/ultis/convertDate";
 
 interface Order {
   id: number;
   status: string;
   user_id: number;
   product_id: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const listStatus = {
@@ -69,7 +72,7 @@ const listStatus = {
   cancelled: "Cancelled",
 };
 interface sortOption {
-  orderBy: "id" | "status";
+  orderBy: "id" | "status" | "createdAt";
   sortBy: "asc" | "desc";
 }
 
@@ -171,6 +174,7 @@ const Order = () => {
         <Input
           className="w-[400px]"
           onChange={(e) => {
+            setPage(1);
             setKeyword(e.target.value);
           }}
         ></Input>
@@ -297,6 +301,31 @@ const Order = () => {
               </Button>
             </TableHead>
             <TableHead className="text-center">
+              <Button
+                variant="ghost"
+                className="my-2"
+                onClick={() => {
+                  setSort((prev) => {
+                    if (prev.orderBy !== "createdAt") {
+                      return {
+                        orderBy: "createdAt",
+                        sortBy: "asc",
+                      };
+                    } else {
+                      return prev.sortBy === "asc"
+                        ? { orderBy: "createdAt", sortBy: "desc" }
+                        : { orderBy: "createdAt", sortBy: "asc" };
+                    }
+                  });
+                }}
+              >
+                Created At
+                <span>
+                  <GoArrowSwitch className="rotate-90" />
+                </span>
+              </Button>
+            </TableHead>
+            <TableHead className="text-center">
               <Button variant="ghost" className="my-2">
                 Action
               </Button>
@@ -313,6 +342,9 @@ const Order = () => {
                 <Badge variant={handleVariant(order.status)}>
                   {Uppercase(order.status)}
                 </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                {convertDate(order.createdAt)}
               </TableCell>
               <TableCell align="center">
                 <AlertDialog>

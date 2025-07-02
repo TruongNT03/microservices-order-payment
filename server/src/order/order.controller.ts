@@ -38,7 +38,7 @@ export class OrderController {
     @Query('keyword') keyword: string,
     @Query('orderBy') orderBy: string,
     @Query('sortBy') sortBy: string,
-  ) {
+  ): any {
     return this.orderService.getAll(
       page,
       limit,
