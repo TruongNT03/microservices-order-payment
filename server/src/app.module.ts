@@ -3,20 +3,21 @@ import { OrderModule } from './order/order.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventsModule } from './event/events.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
     EventsModule,
     OrderModule,
+    ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'Taki2003!',
-      database: 'shop',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT ?? '5432', 10),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),

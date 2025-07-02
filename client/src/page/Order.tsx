@@ -80,7 +80,7 @@ const socket = io("http://127.0.0.1:8080", {});
 
 const Order = () => {
   const [orders, setOrder] = useState<Array<Order>>([]);
-  const [page, setPage] = useState<number>(2);
+  const [page, setPage] = useState<number>(1);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [filter, setFiller] = useState<string>("all");
   const [keyword, setKeyword] = useState<string>("");
