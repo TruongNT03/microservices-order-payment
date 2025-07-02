@@ -40,4 +40,13 @@ const cancel = async (id: number) => {
   }
 };
 
-export { getAll, create, cancel };
+const getById = async (id: number) => {
+  try {
+    const response = await instance.get(`order/${id}`);
+    return response;
+  } catch (error) {
+    Promise.reject(error);
+  }
+};
+
+export { getAll, create, cancel, getById };

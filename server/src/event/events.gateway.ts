@@ -33,6 +33,10 @@ export class EventsGateway
     this.server.emit('event', {});
   }
 
+  emitMessage(message: string) {
+    this.server.emit('message', message);
+  }
+
   handleDisconnect(client: Socket) {
     console.log('Client disconnected ' + client.id);
   }

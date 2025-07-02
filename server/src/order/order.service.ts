@@ -1,18 +1,17 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
-  Param,
-  Query,
   Res,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { Like, Not, Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { Response } from 'express';
 import { ClientProxy, Payload } from '@nestjs/microservices';
-import { EventService } from 'src/event/event.service';
 import { EventsGateway } from 'src/event/events.gateway';
 
 @Injectable()
@@ -25,21 +24,22 @@ export class OrderService {
     private readonly eventGateway: EventsGateway,
   ) {}
 
-  async create(dto: CreateOrderDto, @Res() res: Response) {
+  async create(dto: CreateOrderDto) {
     const result: { status: string } = await this.paymentClient
       .send('payment', { PIN: dto.PIN })
       .toPromise();
+
     const order = await this.orderRepo.save({
       user_id: dto.user_id,
       product_id: dto.product_id,
     });
+    // Neu bi tu choi
     if (result.status === 'declined') {
       order.status = 'cancelled';
       await this.orderRepo.save(order);
-      return res
-        .status(400)
-        .json({ message: 'Order bị từ chối!', data: order });
+      throw new BadRequestException('Order bị từ chối!');
     }
+    // Thanh cong
     if (result.status === 'confirmed') {
       order.status = 'confirmed';
       await this.orderRepo.save(order);
@@ -47,38 +47,41 @@ export class OrderService {
         order.status = 'delivered';
         await this.orderRepo.save(order);
         this.eventGateway.emitOrderStatusUpdate();
+        this.eventGateway.emitMessage(
+          `Đơn hàng #${order.id} đã được vận chuyển!`,
+        );
       }, 5000);
-      return res.status(201).json({
+      return {
         message: 'Tạo mới order thành công!',
         data: order,
-      });
+      };
     }
-    return res.status(500).json({ message: 'Error' });
   }
 
-  async cancel(id: number, @Res() res: Response) {
-    const order = await this.orderRepo.findOne({
-      where: { id: id },
-    });
-    if (!order) {
-      return res.status(404).json({
-        message: 'Không tồn tại order!',
+  async cancel(id: number) {
+    try {
+      const order = await this.orderRepo.findOne({
+        where: { id: id },
       });
+      if (!order) {
+        throw new NotFoundException();
+      }
+
+      order.status = 'cancelled';
+      await this.orderRepo.save(order);
+
+      return {
+        data: order,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException();
     }
-    order.status = 'cancelled';
-    await this.orderRepo.save(order);
-    return res.status(200).json({
-      message: 'Cancel Order thành công!',
-    });
   }
 
-  async getAll(
-    page: number,
-    limit: number,
-    filter: string,
-    keyword: string,
-    @Res() res: Response,
-  ) {
+  async getAll(page: number, limit: number, filter: string, keyword: string) {
     const filterCondition =
       filter === 'all'
         ? {}
@@ -101,28 +104,33 @@ export class OrderService {
       take: limit,
       skip: skip,
     });
-    return res.status(200).json({
+    return {
       message: 'Thành công!',
       data: orders,
       currentPage: page,
       totalPage: totalPage,
-    });
+    };
   }
 
-  async getById(@Res() res: Response, id: number) {
-    const order = await this.orderRepo.findOne({
-      where: {
-        id: id,
-      },
-    });
-    if (!order) {
-      return res.status(404).json({
-        message: 'Không tồn tại order',
+  async getById(id: number) {
+    try {
+      const order = await this.orderRepo.findOne({
+        where: {
+          id: id,
+        },
       });
+      if (!order) {
+        throw new NotFoundException();
+      }
+      return {
+        message: 'Thành công!',
+        data: order,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException();
     }
-    return res.status(200).json({
-      message: 'Thành công!',
-      data: order,
-    });
   }
 }

@@ -1,10 +1,16 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { OrderController } from './order.controller';
 import { OrderService } from './order.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
+import { AuthenMiddleware } from 'src/middleware/authen.middleware';
 
 @Module({
   imports: [
@@ -20,4 +26,11 @@ import { EventsGateway } from 'src/event/events.gateway';
   controllers: [OrderController],
   providers: [OrderService, EventsGateway],
 })
-export class OrderModule {}
+export class OrderModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthenMiddleware)
+      .exclude({ path: 'order', method: RequestMethod.GET })
+      .forRoutes(OrderController);
+  }
+}

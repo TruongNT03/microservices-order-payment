@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import io from "socket.io-client";
 import {
@@ -28,8 +30,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { useEffect, useState } from "react";
-import { getAll, create, cancel } from "@/services/Order";
+import { useEffect, useRef, useState } from "react";
+import { getAll, create, cancel, getById } from "@/services/Order";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +44,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+
+import { Toaster, toast } from "sonner";
 
 interface Order {
   id: number;
@@ -63,33 +73,43 @@ const socket = io("http://127.0.0.1:8080", {});
 
 const Order = () => {
   const [orders, setOrder] = useState<Array<Order>>([]);
-  const [page, setPage] = useState<number>(1);
+  const [page, setPage] = useState<number>(2);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [filter, setFiller] = useState<string>("all");
   const [keyword, setKeyword] = useState<string>("");
   const [PIN, setPIN] = useState<string>("");
-  const featchData = async () => {
+  const pageRef = useRef(page);
+  const featchData = async (currentPage = page) => {
     const response = await getAll({
-      page: page,
+      page: currentPage,
       limit: 10,
       filter: filter,
       keyword: keyword,
     });
-    setPage(response?.data.currentPage);
     setTotalPage(response?.data.totalPage);
     setOrder(response?.data.data);
   };
+
+  const getDetails = async (id: number) => {
+    const response = await getById(id);
+  };
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
   useEffect(() => {
     socket.on("connect", () => {});
-    socket.on("event", () => {
-      featchData();
-      toast("Event has been created", {
-        description: "Đơn hàng đã được vận chuyển!",
+    socket.on("message", (message) => {
+      console.log(message);
+      toast("Thông báo", {
+        description: message,
         action: {
           label: "Undo",
           onClick: () => console.log("Undo"),
         },
       });
+    });
+    socket.on("event", async () => {
+      await featchData(pageRef.current);
     });
   }, []);
 
@@ -114,7 +134,14 @@ const Order = () => {
   };
   const handleCancel = async (id: number) => {
     await cancel(id);
-    featchData();
+    await featchData();
+    toast("Thông báo", {
+      description: "Hủy đơn hàng thành công!",
+      action: {
+        label: "Undo",
+        onClick: () => console.log("Undo"),
+      },
+    });
   };
   const handleCreate = async () => {
     await create(PIN);
@@ -128,6 +155,7 @@ const Order = () => {
   };
   return (
     <div className="w-[800px] m-auto mt-[100px] border-[1px] rounded-xl p-5">
+      <Toaster position="top-right" />
       <div className="my-2 flex justify-between">
         <Input
           className="w-[400px]"
@@ -152,18 +180,43 @@ const Order = () => {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <AlertDialog>
+        <AlertDialog
+          onOpenChange={(open) => {
+            !open && setPIN("");
+          }}
+        >
           <AlertDialogTrigger asChild>
             <Button variant="default">Create Order</Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>TẠO MỚI ORDER</AlertDialogTitle>
-              <Label htmlFor="input">Nhập mã PIN để tạo order:</Label>
-              <Input
-                onChange={(e) => setPIN(e.target.value)}
-                id="input"
-              ></Input>
+              <div className="mx-auto">
+                <Label htmlFor="input" className="mb-4">
+                  Nhập mã PIN để tạo order:
+                </Label>
+                <InputOTP
+                  maxLength={4}
+                  id="input"
+                  value={PIN}
+                  onChange={(value) => setPIN(value)}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <div className="text-center text-sm">
+                {PIN === "" ? (
+                  <>Enter your one-time password.</>
+                ) : (
+                  <>You entered: {PIN}</>
+                )}
+              </div>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -182,7 +235,7 @@ const Order = () => {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className="w-[150px]">Status</TableHead>
             <TableHead className="text-center">Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -198,7 +251,14 @@ const Order = () => {
               <TableCell align="center">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline">Details</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        getDetails(order.id);
+                      }}
+                    >
+                      Details
+                    </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
