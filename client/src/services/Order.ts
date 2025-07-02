@@ -5,6 +5,8 @@ interface queryOftion {
   page: number;
   filter: string;
   keyword: string;
+  orderBy: string;
+  sortBy: string;
 }
 
 const getAll = async (queryOftion: queryOftion) => {

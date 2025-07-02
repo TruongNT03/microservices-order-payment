@@ -81,7 +81,14 @@ export class OrderService {
     }
   }
 
-  async getAll(page: number, limit: number, filter: string, keyword: string) {
+  async getAll(
+    page: number,
+    limit: number,
+    filter: string,
+    keyword: string,
+    orderBy: string,
+    sortBy: string,
+  ) {
     const filterCondition =
       filter === 'all'
         ? {}
@@ -93,6 +100,7 @@ export class OrderService {
           id: keyword,
         }
       : {};
+    const orderCondition = { [orderBy]: sortBy.toLocaleUpperCase() };
     const skip = (page - 1) * limit;
     const totalItem = await this.orderRepo.count({
       where: { ...filterCondition },
@@ -100,7 +108,7 @@ export class OrderService {
     const totalPage = Math.ceil(totalItem / limit);
     const orders = await this.orderRepo.find({
       where: filterCondition,
-      order: { id: 'ASC' },
+      order: orderCondition,
       take: limit,
       skip: skip,
     });

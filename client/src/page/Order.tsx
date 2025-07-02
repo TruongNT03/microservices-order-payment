@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { GoArrowSwitch } from "react-icons/go";
 import io from "socket.io-client";
 import {
   Table,
@@ -48,7 +49,6 @@ import {
 import {
   InputOTP,
   InputOTPGroup,
-  InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 
@@ -68,6 +68,10 @@ const listStatus = {
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
+interface sortOption {
+  orderBy: "id" | "status";
+  sortBy: "asc" | "desc";
+}
 
 const socket = io("http://127.0.0.1:8080", {});
 
@@ -78,6 +82,10 @@ const Order = () => {
   const [filter, setFiller] = useState<string>("all");
   const [keyword, setKeyword] = useState<string>("");
   const [PIN, setPIN] = useState<string>("");
+  const [sort, setSort] = useState<sortOption>({
+    orderBy: "id",
+    sortBy: "asc",
+  });
   const pageRef = useRef(page);
   const featchData = async (currentPage = page) => {
     const response = await getAll({
@@ -85,6 +93,8 @@ const Order = () => {
       limit: 10,
       filter: filter,
       keyword: keyword,
+      orderBy: sort.orderBy,
+      sortBy: sort.sortBy,
     });
     setTotalPage(response?.data.totalPage);
     setOrder(response?.data.data);
@@ -92,6 +102,7 @@ const Order = () => {
 
   const getDetails = async (id: number) => {
     const response = await getById(id);
+    console.log(response);
   };
   useEffect(() => {
     pageRef.current = page;
@@ -149,7 +160,7 @@ const Order = () => {
   };
   useEffect(() => {
     featchData();
-  }, [page, filter, keyword]);
+  }, [page, filter, keyword, sort]);
   const Uppercase = (str: string): string => {
     return str.substring(0, 1).toUpperCase() + str.substring(1);
   };
@@ -165,6 +176,7 @@ const Order = () => {
         ></Input>
         <Select
           onValueChange={(value) => {
+            setPage(1);
             setFiller(value);
           }}
         >
@@ -234,15 +246,69 @@ const Order = () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">ID</TableHead>
-            <TableHead className="w-[150px]">Status</TableHead>
-            <TableHead className="text-center">Action</TableHead>
+            <TableHead className="w-[100px] text-center">
+              <Button
+                variant="ghost"
+                className="my-2"
+                onClick={() => {
+                  setSort((prev) => {
+                    if (prev.orderBy !== "id") {
+                      return {
+                        orderBy: "id",
+                        sortBy: "asc",
+                      };
+                    } else {
+                      return prev.sortBy === "asc"
+                        ? { orderBy: "id", sortBy: "desc" }
+                        : { orderBy: "id", sortBy: "asc" };
+                    }
+                  });
+                }}
+              >
+                ID
+                <span>
+                  <GoArrowSwitch className="rotate-90" />
+                </span>
+              </Button>
+            </TableHead>
+            <TableHead className="w-[150px]">
+              <Button
+                variant="ghost"
+                className="my-2"
+                onClick={() => {
+                  setSort((prev) => {
+                    if (prev.orderBy !== "status") {
+                      return {
+                        orderBy: "status",
+                        sortBy: "asc",
+                      };
+                    } else {
+                      return prev.sortBy === "asc"
+                        ? { orderBy: "status", sortBy: "desc" }
+                        : { orderBy: "status", sortBy: "asc" };
+                    }
+                  });
+                }}
+              >
+                Status
+                <span>
+                  <GoArrowSwitch className="rotate-90" />
+                </span>
+              </Button>
+            </TableHead>
+            <TableHead className="text-center">
+              <Button variant="ghost" className="my-2">
+                Action
+              </Button>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.map((order) => (
             <TableRow key={order.id}>
-              <TableCell className="font-medium">{order.id}</TableCell>
+              <TableCell className="font-medium text-center">
+                {order.id}
+              </TableCell>
               <TableCell>
                 <Badge variant={handleVariant(order.status)}>
                   {Uppercase(order.status)}
