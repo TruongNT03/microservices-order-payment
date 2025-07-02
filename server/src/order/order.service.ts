@@ -14,6 +14,7 @@ import { Response } from 'express';
 import { ClientProxy, Payload } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
 import { paginate } from 'src/commom/ultis/paginate';
+import { QueryOrderDto } from './dto/getAll.dto';
 
 @Injectable()
 export class OrderService {
@@ -82,14 +83,15 @@ export class OrderService {
     }
   }
 
-  async getAll(
-    page: number,
-    limit: number,
-    filter: string,
-    keyword: string,
-    orderBy: string,
-    sortBy: string,
-  ): Promise<any> {
+  async getAll(q: QueryOrderDto): Promise<any> {
+    const {
+      page = 1,
+      limit = 10,
+      filter,
+      orderBy = 'id',
+      sortBy = 'ASC',
+      keyword,
+    } = q;
     // Chi khoi tao chua tao dieu kien
     const queryBuilder = this.orderRepo.createQueryBuilder('order');
 
@@ -120,9 +122,9 @@ export class OrderService {
       sortBy.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
     );
     // Neu muon tim kiem tat ca
-    filter !== 'all'
-      ? queryBuilder.andWhere('order.status = :status', { status: filter })
-      : {};
+    filter !== 'all' &&
+      queryBuilder.where('order.status = :status', { status: filter });
+
     return paginate(queryBuilder, page, limit);
   }
 

@@ -7,13 +7,12 @@ import {
   Post,
   Put,
   Query,
-  Res,
   UseFilters,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/createOrder.dto';
-import { Response } from 'express';
 import { HttpExceptionFilter } from 'src/exception/http-exception.filter';
+import { QueryOrderDto } from './dto/getAll.dto';
 
 @Controller('order')
 @UseFilters(new HttpExceptionFilter())
@@ -31,22 +30,8 @@ export class OrderController {
   }
 
   @Get('')
-  getAll(
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
-    @Query('filter') filter: string,
-    @Query('keyword') keyword: string,
-    @Query('orderBy') orderBy: string,
-    @Query('sortBy') sortBy: string,
-  ): any {
-    return this.orderService.getAll(
-      page,
-      limit,
-      filter,
-      keyword,
-      orderBy,
-      sortBy,
-    );
+  getAll(@Query() q: QueryOrderDto): any {
+    return this.orderService.getAll(q);
   }
 
   @Get('/:id')
