@@ -105,8 +105,8 @@ const Order = () => {
       orderBy: sort.orderBy,
       sortBy: sort.sortBy,
     });
-    setTotalPage(response?.data.totalPage);
-    setOrder(response?.data.data);
+    setTotalPage(response?.totalPage);
+    setOrder(response?.data);
   };
 
   const getDetails = async (id: number) => {

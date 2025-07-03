@@ -16,7 +16,7 @@ const getAll = async (queryOftion: queryOftion) => {
     });
     return response.data;
   } catch (error) {
-    Promise.reject(error);
+    return Promise.reject(error);
   }
 };
 
@@ -29,7 +29,7 @@ const create = async (PIN: string) => {
     });
     return response.data;
   } catch (error) {
-    Promise.reject(error);
+    return Promise.reject(error);
   }
 };
 
@@ -38,7 +38,7 @@ const cancel = async (id: number) => {
     const response = await instance.put(`order/cancel/${id}`);
     return response.data;
   } catch (error) {
-    Promise.reject(error);
+    return Promise.reject(error);
   }
 };
 
@@ -47,7 +47,7 @@ const getById = async (id: number) => {
     const response = await instance.get(`order/${id}`);
     return response.data;
   } catch (error) {
-    Promise.reject(error);
+    return Promise.reject(error);
   }
 };
 
