@@ -4,14 +4,12 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  Res,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Not, Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { CreateOrderDto } from './dto/createOrder.dto';
-import { Response } from 'express';
-import { ClientProxy, Payload } from '@nestjs/microservices';
+import { ClientProxy, Payload, RpcException } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
 import { paginate } from 'src/commom/ultis/paginate';
 import { QueryOrderDto } from './dto/getAll.dto';
@@ -27,9 +25,14 @@ export class OrderService {
   ) {}
 
   async create(dto: CreateOrderDto) {
-    const result: { status: string } = await this.paymentClient
-      .send('payment', { PIN: dto.PIN })
-      .toPromise();
+    let result: { status: string };
+    try {
+      result = await this.paymentClient
+        .send('payment', { PIN: dto.PIN })
+        .toPromise();
+    } catch (error) {
+      throw new RpcException('Error');
+    }
 
     const order = await this.orderRepo.save({
       user_id: dto.user_id,
@@ -95,22 +98,31 @@ export class OrderService {
     // Chi khoi tao chua tao dieu kien
     const queryBuilder = this.orderRepo.createQueryBuilder('order');
 
+    // Bo loc
+    filter !== 'all' &&
+      queryBuilder.where('order.status = :status', { status: filter });
+
     // Tim kiem
     // Theo thoi gian
     queryBuilder.andWhere(
-      "TO_CHAR(order.createdAt, 'HH24:MI DD/MM/YYYY') LIKE :keyword",
-      {
-        keyword: `%${keyword}%`,
-      },
+      new Brackets((qb) => {
+        qb.andWhere(
+          "TO_CHAR(order.createdAt, 'HH24:MI DD/MM/YYYY') LIKE :keyword",
+          {
+            keyword: `%${keyword}%`,
+          },
+        );
+        // Theo ID
+        qb.orWhere('CAST(order.id AS TEXT) LIKE :keyword', {
+          keyword: `%${keyword}%`,
+        });
+        // Theo status
+        qb.orWhere('CAST(order.status AS TEXT) LIKE :keyword', {
+          keyword: `%${keyword}%`,
+        });
+      }),
     );
-    // Theo ID
-    queryBuilder.orWhere('CAST(order.id AS TEXT) LIKE :keyword', {
-      keyword: `%${keyword}%`,
-    });
-    // Theo status
-    queryBuilder.orWhere('CAST(order.status AS TEXT) LIKE :keyword', {
-      keyword: `%${keyword}%`,
-    });
+
     // Sort
     // Kiem tra cac collumn co the sort tranh bi SQL Injection
     const allowSortField = ['id', 'createdAt', 'status'];
@@ -121,9 +133,6 @@ export class OrderService {
       orderSortField,
       sortBy.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
     );
-    // Neu muon tim kiem tat ca
-    filter !== 'all' &&
-      queryBuilder.where('order.status = :status', { status: filter });
 
     return paginate(queryBuilder, page, limit);
   }

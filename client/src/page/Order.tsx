@@ -1,8 +1,4 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
-import { GoArrowSwitch } from "react-icons/go";
-import io from "socket.io-client";
 import {
   Table,
   TableBody,
@@ -31,8 +27,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { useEffect, useRef, useState } from "react";
-import { getAll, create, cancel, getById } from "@/services/Order";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +48,14 @@ import {
 } from "@/components/ui/input-otp";
 
 import { Toaster, toast } from "sonner";
+import io from "socket.io-client";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { GoArrowSwitch } from "react-icons/go";
+
 import { convertDate } from "@/ultis/convertDate";
+import { UppercaseFirstLetter } from "@/ultis/UppercaseFisrtLetter";
+import { getAll, create, cancel, getById } from "@/services/Order";
 
 interface Order {
   id: number;
@@ -79,20 +81,24 @@ interface sortOption {
 const socket = io("http://127.0.0.1:8080", {});
 
 const Order = () => {
+  // Search Params
+  const [searchParams, setSearchParams] = useSearchParams();
+  const keyword = searchParams.get("keyword") || "";
+  const page = Number.parseInt(searchParams.get("page") || "1");
+  const filter = searchParams.get("filter") || "all";
+
+  // States
   const [orders, setOrder] = useState<Array<Order>>([]);
-  const [page, setPage] = useState<number>(1);
   const [totalPage, setTotalPage] = useState<number>(1);
-  const [filter, setFiller] = useState<string>("all");
-  const [keyword, setKeyword] = useState<string>("");
   const [PIN, setPIN] = useState<string>("");
   const [sort, setSort] = useState<sortOption>({
     orderBy: "id",
     sortBy: "asc",
   });
-  const pageRef = useRef(page);
-  const featchData = async (currentPage = page) => {
+
+  const featchData = async () => {
     const response = await getAll({
-      page: currentPage,
+      page: page,
       limit: 10,
       filter: filter,
       keyword: keyword,
@@ -107,9 +113,7 @@ const Order = () => {
     const response = await getById(id);
     console.log(response);
   };
-  useEffect(() => {
-    pageRef.current = page;
-  }, [page]);
+
   useEffect(() => {
     socket.on("connect", () => {});
     socket.on("message", (message) => {
@@ -123,7 +127,7 @@ const Order = () => {
       });
     });
     socket.on("event", async () => {
-      await featchData(pageRef.current);
+      await featchData();
     });
   }, []);
 
@@ -163,10 +167,8 @@ const Order = () => {
   };
   useEffect(() => {
     featchData();
-  }, [page, filter, keyword, sort]);
-  const Uppercase = (str: string): string => {
-    return str.substring(0, 1).toUpperCase() + str.substring(1);
-  };
+  }, [searchParams]);
+
   return (
     <div className="w-[800px] m-auto mt-[100px] border-[1px] rounded-xl p-5">
       <Toaster position="top-right" />
@@ -174,14 +176,20 @@ const Order = () => {
         <Input
           className="w-[400px]"
           onChange={(e) => {
-            setPage(1);
-            setKeyword(e.target.value);
+            setSearchParams((prev) => {
+              prev.set("keyword", e.target.value);
+              prev.set("page", "1");
+              return prev;
+            });
           }}
         ></Input>
         <Select
           onValueChange={(value) => {
-            setPage(1);
-            setFiller(value);
+            setSearchParams((prev) => {
+              prev.set("filter", value);
+              prev.set("page", "1");
+              return prev;
+            });
           }}
         >
           <SelectTrigger className="w-[180px]">
@@ -340,7 +348,7 @@ const Order = () => {
               </TableCell>
               <TableCell>
                 <Badge variant={handleVariant(order.status)}>
-                  {Uppercase(order.status)}
+                  {UppercaseFirstLetter(order.status)}
                 </Badge>
               </TableCell>
               <TableCell className="text-center">
@@ -372,7 +380,7 @@ const Order = () => {
                           <div className="flex justify-between">
                             Trạng thái:{" "}
                             <Badge variant={handleVariant(order.status)}>
-                              {Uppercase(order.status)}
+                              {UppercaseFirstLetter(order.status)}
                             </Badge>
                           </div>
                         </div>
@@ -388,9 +396,6 @@ const Order = () => {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                {/* <Button variant="outline" className="cursor-pointer">
-                  Details
-                </Button> */}
                 <Button
                   onClick={() => {
                     handleCancel(order.id);
@@ -412,22 +417,37 @@ const Order = () => {
           <PaginationContent>
             <PaginationItem
               onClick={() => {
-                if (page != 1) {
-                  setPage((prev) => prev - 1);
-                }
+                setSearchParams((prev) => {
+                  const page = Number.parseInt(prev.get("page") || "1");
+                  if (page != 1) {
+                    prev.set("page", (page - 1).toString());
+                  }
+                  return prev;
+                });
               }}
             >
               <PaginationPrevious href="#" />
             </PaginationItem>
-
-            <PaginationItem onClick={() => setPage(1)}>
+            <PaginationItem
+              onClick={() => {
+                setSearchParams((prev) => {
+                  prev.set("page", "1");
+                  return prev;
+                });
+              }}
+            >
               <PaginationLink href="#" isActive={page === 1}>
                 1
               </PaginationLink>
             </PaginationItem>
             <PaginationItem>
               <PaginationLink
-                onClick={() => setPage((prev) => prev - 1)}
+                onClick={() => {
+                  setSearchParams((prev) => {
+                    prev.set("page", (page - 1).toString());
+                    return prev;
+                  });
+                }}
                 href="#"
                 className={`${page > 2 ? "" : "hidden"}`}
               >
@@ -443,7 +463,12 @@ const Order = () => {
             </PaginationItem>
             <PaginationItem>
               <PaginationLink
-                onClick={() => setPage((prev) => prev + 1)}
+                onClick={() => {
+                  setSearchParams((prev) => {
+                    prev.set("page", (page + 1).toString());
+                    return prev;
+                  });
+                }}
                 href="#"
                 className={`${page < totalPage - 1 ? "" : "hidden"}`}
               >
@@ -453,15 +478,32 @@ const Order = () => {
             <PaginationItem>
               <PaginationEllipsis />
             </PaginationItem>
-            <PaginationItem onClick={() => setPage(totalPage)}>
-              <PaginationLink href="#" isActive={page === totalPage}>
+            <PaginationItem
+              onClick={() => {
+                setSearchParams((prev) => {
+                  prev.set("page", totalPage.toString());
+                  return prev;
+                });
+              }}
+            >
+              <PaginationLink
+                href="#"
+                isActive={page === totalPage}
+                className={`${totalPage > 1 ? "" : "invisible"}`}
+              >
                 {totalPage}
               </PaginationLink>
             </PaginationItem>
             <PaginationItem
               onClick={() => {
                 if (page < totalPage) {
-                  setPage((prev) => prev + 1);
+                  setSearchParams((prev) => {
+                    const page = Number.parseInt(prev.get("page") || "1");
+                    if (page < totalPage) {
+                      prev.set("page", (page + 1).toString());
+                    }
+                    return prev;
+                  });
                 }
               }}
             >

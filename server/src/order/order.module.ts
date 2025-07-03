@@ -10,7 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
-import { AuthenMiddleware } from 'src/middleware/authen.middleware';
+import { AuthenMiddleware } from 'src/commom/middleware/authen.middleware';
 
 @Module({
   imports: [

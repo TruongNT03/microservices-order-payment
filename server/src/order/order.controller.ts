@@ -11,11 +11,13 @@ import {
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/createOrder.dto';
-import { HttpExceptionFilter } from 'src/exception/http-exception.filter';
+import { HttpExceptionFilter } from 'src/commom/exception/http-exception.filter';
 import { QueryOrderDto } from './dto/getAll.dto';
+import { ServiceExceptionFilter } from 'src/commom/exception/rpc-exception.filter';
 
 @Controller('order')
 @UseFilters(new HttpExceptionFilter())
+@UseFilters(new ServiceExceptionFilter())
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 

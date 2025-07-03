@@ -14,7 +14,7 @@ const getAll = async (queryOftion: queryOftion) => {
     const response = await instance.get("/order", {
       params: queryOftion,
     });
-    return response;
+    return response.data;
   } catch (error) {
     Promise.reject(error);
   }
@@ -27,7 +27,7 @@ const create = async (PIN: string) => {
       product_id: 1,
       PIN: PIN,
     });
-    return response;
+    return response.data;
   } catch (error) {
     Promise.reject(error);
   }
@@ -36,7 +36,7 @@ const create = async (PIN: string) => {
 const cancel = async (id: number) => {
   try {
     const response = await instance.put(`order/cancel/${id}`);
-    return response;
+    return response.data;
   } catch (error) {
     Promise.reject(error);
   }
@@ -45,7 +45,7 @@ const cancel = async (id: number) => {
 const getById = async (id: number) => {
   try {
     const response = await instance.get(`order/${id}`);
-    return response;
+    return response.data;
   } catch (error) {
     Promise.reject(error);
   }
