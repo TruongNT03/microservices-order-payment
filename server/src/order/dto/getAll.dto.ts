@@ -12,31 +12,32 @@ export class QueryOrderDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
+  @IsOptional()
   page?: number = 1;
 
   @Type(() => Number)
-  @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(100)
+  @IsOptional()
   limit?: number = 10;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   keyword?: string = '';
 
-  @IsOptional()
   @IsString()
-  @IsIn(['all', 'delivered', 'created', 'comfirmed', 'cancelled'])
+  @IsIn(['all', 'delivered', 'created', 'confirmed', 'cancelled'])
+  @IsOptional()
   filter?: string = 'all';
 
-  @IsOptional()
   @IsString()
-  @IsIn(['ASC', 'DESC'])
-  sortBy?: string = 'DESC';
-
+  @IsIn(['asc', 'desc'])
   @IsOptional()
+  sortBy?: string = 'asc';
+
   @IsString()
   @IsIn(['createdAt', 'status', 'id'])
+  @IsOptional()
   orderBy?: string = 'createdAt';
 }
