@@ -9,7 +9,23 @@ interface queryOftion {
   sortBy: string;
 }
 
-const getAll = async (queryOftion: queryOftion) => {
+interface order {
+  id: number;
+  user_id: number;
+  product_id: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface getAllRes {
+  data: order[];
+  currentPage: number;
+  totalPage: number;
+  limit: number;
+}
+
+const getAll = async (queryOftion: queryOftion): Promise<getAllRes> => {
   try {
     const response = await instance.get("/order", {
       params: queryOftion,

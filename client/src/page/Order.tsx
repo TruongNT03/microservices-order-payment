@@ -56,6 +56,7 @@ import { GoArrowSwitch } from "react-icons/go";
 import { convertDate } from "@/ultis/convertDate";
 import { UppercaseFirstLetter } from "@/ultis/UppercaseFisrtLetter";
 import { getAll, create, cancel, getById } from "@/services/Order";
+import { useQuery } from "@tanstack/react-query";
 
 interface Order {
   id: number;
@@ -86,28 +87,23 @@ const Order = () => {
   const keyword = searchParams.get("keyword") || "";
   const page = Number.parseInt(searchParams.get("page") || "1");
   const filter = searchParams.get("filter") || "all";
-
+  const orderBy = searchParams.get("orderBy") || "id";
+  const sortBy = searchParams.get("sortBy") || "asc";
   // States
-  const [orders, setOrder] = useState<Array<Order>>([]);
-  const [totalPage, setTotalPage] = useState<number>(1);
   const [PIN, setPIN] = useState<string>("");
-  const [sort, setSort] = useState<sortOption>({
-    orderBy: "id",
-    sortBy: "asc",
+  // Tanstack
+  const { data, refetch } = useQuery({
+    queryKey: ["order", { keyword, page, filter, orderBy, sortBy }],
+    queryFn: () =>
+      getAll({
+        page: page,
+        limit: 10,
+        filter: filter,
+        keyword: keyword,
+        orderBy: orderBy,
+        sortBy: sortBy,
+      }),
   });
-
-  const featchData = async () => {
-    const response = await getAll({
-      page: page,
-      limit: 10,
-      filter: filter,
-      keyword: keyword,
-      orderBy: sort.orderBy,
-      sortBy: sort.sortBy,
-    });
-    setTotalPage(response?.totalPage);
-    setOrder(response?.data);
-  };
 
   const getDetails = async (id: number) => {
     const response = await getById(id);
@@ -127,7 +123,7 @@ const Order = () => {
       });
     });
     socket.on("event", async () => {
-      await featchData();
+      refetch();
     });
   }, []);
 
@@ -152,7 +148,7 @@ const Order = () => {
   };
   const handleCancel = async (id: number) => {
     await cancel(id);
-    await featchData();
+    refetch();
     toast("Thông báo", {
       description: "Hủy đơn hàng thành công!",
       action: {
@@ -163,11 +159,8 @@ const Order = () => {
   };
   const handleCreate = async () => {
     await create(PIN);
-    featchData();
+    refetch();
   };
-  useEffect(() => {
-    featchData();
-  }, [searchParams]);
 
   return (
     <div className="w-[800px] m-auto mt-[100px] border-[1px] rounded-xl p-5">
@@ -263,17 +256,20 @@ const Order = () => {
                 variant="ghost"
                 className="my-2"
                 onClick={() => {
-                  setSort((prev) => {
-                    if (prev.orderBy !== "id") {
-                      return {
-                        orderBy: "id",
-                        sortBy: "asc",
-                      };
+                  setSearchParams((prev) => {
+                    const orderBy = prev.get("orderBy");
+                    if (orderBy !== "id") {
+                      prev.set("orderBy", "id");
+                      prev.set("sortBy", "asc");
                     } else {
-                      return prev.sortBy === "asc"
-                        ? { orderBy: "id", sortBy: "desc" }
-                        : { orderBy: "id", sortBy: "asc" };
+                      const sortBy = prev.get("sortBy");
+                      if (sortBy === "asc") {
+                        prev.set("sortBy", "desc");
+                      } else {
+                        prev.set("sortBy", "asc");
+                      }
                     }
+                    return prev;
                   });
                 }}
               >
@@ -288,17 +284,20 @@ const Order = () => {
                 variant="ghost"
                 className="my-2"
                 onClick={() => {
-                  setSort((prev) => {
-                    if (prev.orderBy !== "status") {
-                      return {
-                        orderBy: "status",
-                        sortBy: "asc",
-                      };
+                  setSearchParams((prev) => {
+                    const orderBy = prev.get("orderBy");
+                    if (orderBy !== "status") {
+                      prev.set("orderBy", "status");
+                      prev.set("sortBy", "asc");
                     } else {
-                      return prev.sortBy === "asc"
-                        ? { orderBy: "status", sortBy: "desc" }
-                        : { orderBy: "status", sortBy: "asc" };
+                      const sortBy = prev.get("sortBy");
+                      if (sortBy === "asc") {
+                        prev.set("sortBy", "desc");
+                      } else {
+                        prev.set("sortBy", "asc");
+                      }
                     }
+                    return prev;
                   });
                 }}
               >
@@ -313,17 +312,20 @@ const Order = () => {
                 variant="ghost"
                 className="my-2"
                 onClick={() => {
-                  setSort((prev) => {
-                    if (prev.orderBy !== "createdAt") {
-                      return {
-                        orderBy: "createdAt",
-                        sortBy: "asc",
-                      };
+                  setSearchParams((prev) => {
+                    const orderBy = prev.get("orderBy");
+                    if (orderBy !== "createdAt") {
+                      prev.set("orderBy", "createdAt");
+                      prev.set("sortBy", "asc");
                     } else {
-                      return prev.sortBy === "asc"
-                        ? { orderBy: "createdAt", sortBy: "desc" }
-                        : { orderBy: "createdAt", sortBy: "asc" };
+                      const sortBy = prev.get("sortBy");
+                      if (sortBy === "asc") {
+                        prev.set("sortBy", "desc");
+                      } else {
+                        prev.set("sortBy", "asc");
+                      }
                     }
+                    return prev;
                   });
                 }}
               >
@@ -341,7 +343,7 @@ const Order = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => (
+          {data?.data.map((order) => (
             <TableRow key={order.id}>
               <TableCell className="font-medium text-center">
                 {order.id}
@@ -455,7 +457,9 @@ const Order = () => {
               </PaginationLink>
             </PaginationItem>
             <PaginationItem
-              className={`${page !== 1 && page !== totalPage ? "" : "hidden"} `}
+              className={`${
+                page !== 1 && page !== data?.totalPage ? "" : "hidden"
+              } `}
             >
               <PaginationLink href="#" isActive>
                 {page}
@@ -470,7 +474,9 @@ const Order = () => {
                   });
                 }}
                 href="#"
-                className={`${page < totalPage - 1 ? "" : "hidden"}`}
+                className={`${
+                  data && page < data.totalPage - 1 ? "" : "hidden"
+                }`}
               >
                 {page + 1}
               </PaginationLink>
@@ -481,25 +487,25 @@ const Order = () => {
             <PaginationItem
               onClick={() => {
                 setSearchParams((prev) => {
-                  prev.set("page", totalPage.toString());
+                  data && prev.set("page", data.totalPage.toString());
                   return prev;
                 });
               }}
             >
               <PaginationLink
                 href="#"
-                isActive={page === totalPage}
-                className={`${totalPage > 1 ? "" : "invisible"}`}
+                isActive={page === data?.totalPage}
+                className={`${data && data.totalPage > 1 ? "" : "hidden"}`}
               >
-                {totalPage}
+                {data?.totalPage}
               </PaginationLink>
             </PaginationItem>
             <PaginationItem
               onClick={() => {
-                if (page < totalPage) {
+                if (data && page < data.totalPage) {
                   setSearchParams((prev) => {
                     const page = Number.parseInt(prev.get("page") || "1");
-                    if (page < totalPage) {
+                    if (page < data.totalPage) {
                       prev.set("page", (page + 1).toString());
                     }
                     return prev;
