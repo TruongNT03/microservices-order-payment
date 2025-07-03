@@ -74,10 +74,6 @@ const listStatus = {
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
-interface sortOption {
-  orderBy: "id" | "status" | "createdAt";
-  sortBy: "asc" | "desc";
-}
 
 const socket = io("http://127.0.0.1:8080", {});
 
@@ -104,6 +100,15 @@ const Order = () => {
         sortBy: sortBy,
       }),
   });
+
+  const handleSort = (field: string) => {
+    setSearchParams((prev) => {
+      prev.set("orderBy", field);
+      const sortBy = prev.get("sortBy");
+      sortBy === "asc" ? prev.set("sortBy", "desc") : prev.set("sortBy", "asc");
+      return prev;
+    });
+  };
 
   const getDetails = async (id: number) => {
     const response = await getById(id);
@@ -256,21 +261,7 @@ const Order = () => {
                 variant="ghost"
                 className="my-2"
                 onClick={() => {
-                  setSearchParams((prev) => {
-                    const orderBy = prev.get("orderBy");
-                    if (orderBy !== "id") {
-                      prev.set("orderBy", "id");
-                      prev.set("sortBy", "asc");
-                    } else {
-                      const sortBy = prev.get("sortBy");
-                      if (sortBy === "asc") {
-                        prev.set("sortBy", "desc");
-                      } else {
-                        prev.set("sortBy", "asc");
-                      }
-                    }
-                    return prev;
-                  });
+                  handleSort("id");
                 }}
               >
                 ID
@@ -284,21 +275,7 @@ const Order = () => {
                 variant="ghost"
                 className="my-2"
                 onClick={() => {
-                  setSearchParams((prev) => {
-                    const orderBy = prev.get("orderBy");
-                    if (orderBy !== "status") {
-                      prev.set("orderBy", "status");
-                      prev.set("sortBy", "asc");
-                    } else {
-                      const sortBy = prev.get("sortBy");
-                      if (sortBy === "asc") {
-                        prev.set("sortBy", "desc");
-                      } else {
-                        prev.set("sortBy", "asc");
-                      }
-                    }
-                    return prev;
-                  });
+                  handleSort("status");
                 }}
               >
                 Status
@@ -312,21 +289,7 @@ const Order = () => {
                 variant="ghost"
                 className="my-2"
                 onClick={() => {
-                  setSearchParams((prev) => {
-                    const orderBy = prev.get("orderBy");
-                    if (orderBy !== "createdAt") {
-                      prev.set("orderBy", "createdAt");
-                      prev.set("sortBy", "asc");
-                    } else {
-                      const sortBy = prev.get("sortBy");
-                      if (sortBy === "asc") {
-                        prev.set("sortBy", "desc");
-                      } else {
-                        prev.set("sortBy", "asc");
-                      }
-                    }
-                    return prev;
-                  });
+                  handleSort("createdAt");
                 }}
               >
                 Created At
