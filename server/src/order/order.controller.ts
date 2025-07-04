@@ -8,12 +8,14 @@ import {
   Put,
   Query,
   UseFilters,
+  UseGuards,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { HttpExceptionFilter } from 'src/commom/exception/http-exception.filter';
 import { QueryOrderDto } from './dto/getAll.dto';
 import { ServiceExceptionFilter } from 'src/commom/exception/rpc-exception.filter';
+import { AuthenGuard } from 'src/commom/guard/authen.guard';
 
 @Controller('order')
 @UseFilters(new HttpExceptionFilter())
@@ -31,6 +33,7 @@ export class OrderController {
     return this.orderService.cancel(id);
   }
 
+  @UseGuards(AuthenGuard)
   @Get('')
   getAll(@Query() q: QueryOrderDto): any {
     return this.orderService.getAll(q);
