@@ -11,9 +11,11 @@ import { Order } from './entities/order.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
 import { AuthenMiddleware } from 'src/commom/middleware/authen.middleware';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     TypeOrmModule.forFeature([Order]),
     ClientsModule.register([
       {

@@ -33,7 +33,7 @@ export class OrderController {
     return this.orderService.cancel(id);
   }
 
-  @UseGuards(AuthenGuard)
+  // @UseGuards(AuthenGuard)
   @Get('')
   getAll(@Query() q: QueryOrderDto): any {
     return this.orderService.getAll(q);

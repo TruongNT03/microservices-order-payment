@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 
 export type User = any;
 
@@ -20,10 +21,11 @@ export class UserService {
     },
   ];
   create(createUserDto: CreateUserDto) {
+    const hashPassword = bcrypt.hashSync(createUserDto.password, 10);
     UserService.users.push({
       userId: UserService.id,
       username: createUserDto.username,
-      password: createUserDto.password,
+      password: hashPassword,
       email: createUserDto.email,
     });
     UserService.id += 1;
