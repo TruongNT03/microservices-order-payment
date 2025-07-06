@@ -37,7 +37,7 @@ export class QueryOrderDto {
   sortBy?: string = 'asc';
 
   @IsString()
-  @IsIn(['createdAt', 'status', 'id'])
+  @IsIn(['created_at', 'status', 'id'])
   @IsOptional()
-  orderBy?: string = 'createdAt';
+  orderBy?: string = 'created_at';
 }

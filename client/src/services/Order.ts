@@ -13,9 +13,9 @@ interface order {
   id: number;
   user_id: number;
   product_id: number;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
+  status: "created" | "confirmed" | "delivered" | "cancelled";
+  created_at: string;
+  updated_at: string;
 }
 
 interface getAllRes {
@@ -49,9 +49,13 @@ const create = async (PIN: string) => {
   }
 };
 
-const cancel = async (id: number) => {
+interface Event {
+  event: "confirm" | "cancel" | "deliver";
+}
+
+const changeStatus = async (id: number, event: Event) => {
   try {
-    const response = await instance.put(`order/cancel/${id}`);
+    const response = await instance.patch(`order/${id}`, event);
     return response.data;
   } catch (error) {
     return Promise.reject(error);
@@ -67,4 +71,4 @@ const getById = async (id: number) => {
   }
 };
 
-export { getAll, create, cancel, getById };
+export { getAll, create, changeStatus, getById };

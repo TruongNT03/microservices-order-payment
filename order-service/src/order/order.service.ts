@@ -9,10 +9,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { CreateOrderDto } from './dto/createOrder.dto';
-import { ClientProxy, Payload, RpcException } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
 import { paginate } from 'src/commom/ultis/paginate';
 import { QueryOrderDto } from './dto/getAll.dto';
+import { Request } from 'express';
+import { PaymentResultStatus } from 'src/commom/constants/payment-result-status.enum';
+import { OrderStatus } from 'src/commom/constants/order-status.enum';
+import { UpdateOrderDto } from './dto/UpdateOrder.dto';
+import { getNextState } from './state/order-status.machine';
 
 @Injectable()
 export class OrderService {
@@ -25,68 +30,60 @@ export class OrderService {
   ) {}
 
   async create(dto: CreateOrderDto) {
-    let result: { status: string };
-    try {
-      result = await this.paymentClient
-        .send('payment', { PIN: dto.PIN })
-        .toPromise();
-    } catch (error) {
-      throw new RpcException('Error');
-    }
+    // let result: { status: string };
+    // try {
+    //   result = await this.paymentClient
+    //     .send('payment', { PIN: dto.PIN })
+    //     .toPromise();
+    // } catch (error) {
+    //   throw new RpcException('Error');
+    // }
 
     const order = await this.orderRepo.save({
       user_id: dto.user_id,
       product_id: dto.product_id,
     });
-    // Neu bi tu choi
-    if (result.status === 'declined') {
-      order.status = 'cancelled';
-      await this.orderRepo.save(order);
-      throw new BadRequestException('Order bị từ chối!');
-    }
-    // Thanh cong
-    if (result.status === 'confirmed') {
-      order.status = 'confirmed';
-      await this.orderRepo.save(order);
-      setTimeout(async () => {
-        order.status = 'delivered';
-        await this.orderRepo.save(order);
-        this.eventGateway.emitOrderStatusUpdate();
-        this.eventGateway.emitMessage(
-          `Đơn hàng #${order.id} đã được vận chuyển!`,
-        );
-      }, 5000);
-      return {
-        message: 'Tạo mới order thành công!',
-        data: order,
-      };
-    }
+    // // Neu bi tu choi
+    // if (result.status === PaymentResultStatus.DECLINED) {
+    //   order.status = OrderStatus.CANCELLED;
+    //   await this.orderRepo.save(order);
+    //   throw new BadRequestException('Order bị từ chối!');
+    // }
+    // // Thanh cong
+    // if (result.status === PaymentResultStatus.CONFIRMED) {
+    //   order.status = OrderStatus.CONFIRMED;
+    //   await this.orderRepo.save(order);
+    //   setTimeout(async () => {
+    //     order.status = OrderStatus.DELIVERED;
+    //     await this.orderRepo.save(order);
+    //     this.eventGateway.emitOrderStatusUpdate();
+    //     this.eventGateway.emitMessage(
+    //       `Đơn hàng #${order.id} đã được vận chuyển!`,
+    //     );
+    //   }, 5000);
+    return {
+      message: 'Tạo mới order thành công!',
+      data: order,
+    };
+    // }
   }
 
-  async cancel(id: number) {
-    try {
-      const order = await this.orderRepo.findOne({
-        where: { id: id },
-      });
-      if (!order) {
-        throw new NotFoundException();
-      }
-
-      order.status = 'cancelled';
-      await this.orderRepo.save(order);
-
-      return {
-        data: order,
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException();
+  async update(id: number, updateOrderDto: UpdateOrderDto) {
+    const order = await this.orderRepo.findOne({
+      where: {
+        id: id,
+      },
+    });
+    if (!order) {
+      throw new NotFoundException('Không tồn tại order!');
     }
+    const nextStatus = getNextState(order.status, updateOrderDto.event);
+    order.status = nextStatus;
+    await this.orderRepo.save(order);
+    return order;
   }
 
-  async getAll(q: QueryOrderDto): Promise<any> {
+  async getAll(q: QueryOrderDto, req: Request): Promise<any> {
     const {
       page = 1,
       limit = 10,
@@ -107,7 +104,7 @@ export class OrderService {
     queryBuilder.andWhere(
       new Brackets((qb) => {
         qb.andWhere(
-          "TO_CHAR(order.createdAt, 'HH24:MI DD/MM/YYYY') LIKE :keyword",
+          "TO_CHAR(order.created_at, 'HH24:MI DD/MM/YYYY') LIKE :keyword",
           {
             keyword: `%${keyword}%`,
           },
@@ -125,7 +122,7 @@ export class OrderService {
 
     // Sort
     // Kiem tra cac collumn co the sort tranh bi SQL Injection
-    const allowSortField = ['id', 'createdAt', 'status'];
+    const allowSortField = ['id', 'created_at', 'status'];
     const orderSortField = allowSortField.includes(orderBy)
       ? `order.${orderBy}`
       : 'order.id';

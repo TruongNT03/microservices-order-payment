@@ -1,9 +1,12 @@
+import { OrderStatus } from 'src/commom/constants/order-status.enum';
+import { User } from 'src/user/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
-  Timestamp,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -20,14 +23,18 @@ export class Order {
 
   @Column({
     type: 'enum',
-    enum: ['created', 'confirmed', 'delivered', 'cancelled'],
-    default: 'created',
+    enum: OrderStatus,
+    default: OrderStatus.CREATED,
   })
-  status: string;
+  status: OrderStatus;
 
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updated_at: Date;
+
+  @ManyToOne(() => User, (user) => user.orders)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 }
