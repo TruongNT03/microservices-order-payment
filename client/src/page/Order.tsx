@@ -42,7 +42,7 @@ import {
 
 import { Toaster, toast } from "sonner";
 import io from "socket.io-client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GoArrowSwitch } from "react-icons/go";
 

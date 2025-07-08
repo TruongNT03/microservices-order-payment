@@ -1,7 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { PaymentService } from './payment.service';
-import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
-import { Observable } from 'rxjs';
+import { MessagePattern } from '@nestjs/microservices';
 
 @Controller('')
 export class PaymentController {
