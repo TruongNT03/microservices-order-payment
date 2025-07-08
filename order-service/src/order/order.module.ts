@@ -12,6 +12,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
 import { AuthenMiddleware } from 'src/commom/middleware/authen.middleware';
 import { AuthModule } from 'src/auth/auth.module';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { AuthModule } from 'src/auth/auth.module';
     ]),
   ],
   controllers: [OrderController],
-  providers: [OrderService, EventsGateway],
+  providers: [OrderService, EventsGateway, JwtService],
 })
 export class OrderModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

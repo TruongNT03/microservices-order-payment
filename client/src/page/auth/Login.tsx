@@ -6,6 +6,7 @@ import * as z from "zod/v4";
 import * as User from "@/services/User";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 const loginSchema = z.object({
   username: z.string(),
@@ -90,9 +91,9 @@ const Login = () => {
         {/* Register */}
         <div className="text-sm text-center mt-6">
           Don't have an account?{" "}
-          <a href="register" className="font-semibold hover:underline">
+          <Link to="/register" className="font-semibold hover:underline">
             Sign up
-          </a>
+          </Link>
         </div>
       </div>
     </div>

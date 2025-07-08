@@ -1,3 +1,4 @@
+import { JwtService } from '@nestjs/jwt';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -6,6 +7,11 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+
+export interface OnlineUser {
+  user: any;
+  socket_id: string;
+}
 
 @WebSocketGateway({
   cors: {
@@ -17,27 +23,51 @@ export class EventsGateway
 {
   @WebSocketServer()
   server: Server;
-  constructor() {}
+  constructor(private jwtService: JwtService) {}
 
-  afterInit(server: Socket) {
+  private static onlineUser: OnlineUser[] = [];
+
+  afterInit(server: Server) {
     console.log('Server initialized');
   }
 
   handleConnection(client: Socket, ...args: any[]) {
-    // setInterval(() => {
-    //   // client.emit('event', 'hehe');
-    // }, 10000);
+    if (!client.handshake.auth.access_token) {
+      client.disconnect();
+      return;
+    }
+    const user = this.jwtService.verify(client.handshake.auth.access_token, {
+      secret: 'abc',
+    });
+    console.log('Client connected ' + client.id);
+    EventsGateway.onlineUser.push({
+      user: user,
+      socket_id: client.id,
+    });
   }
 
-  emitOrderStatusUpdate() {
-    this.server.emit('event', {});
+  emitOrderStatusUpdate(user_id: number) {
+    const userEmit = EventsGateway.onlineUser.find(
+      (onlineUser) => onlineUser.user.id === user_id,
+    );
+    if (userEmit) {
+      this.server.to(userEmit.socket_id).emit('event', {});
+    }
   }
 
-  emitMessage(message: string) {
-    this.server.emit('message', message);
+  emitMessage(message: string, user_id: number) {
+    const userEmit = EventsGateway.onlineUser.find(
+      (onlineUser) => onlineUser.user.id === user_id,
+    );
+    if (userEmit) {
+      this.server.to(userEmit.socket_id).emit('message', message);
+    }
   }
 
   handleDisconnect(client: Socket) {
     console.log('Client disconnected ' + client.id);
+    EventsGateway.onlineUser = EventsGateway.onlineUser.filter(
+      (onlineUser) => onlineUser.socket_id !== client.id,
+    );
   }
 }

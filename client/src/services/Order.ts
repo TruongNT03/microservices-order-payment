@@ -36,26 +36,24 @@ const getAll = async (queryOftion: queryOftion): Promise<getAllRes> => {
   }
 };
 
-const create = async (PIN: string) => {
+const create = async () => {
   try {
     const response = await instance.post("order", {
-      user_id: 1,
-      product_id: 1,
-      PIN: PIN,
+      product_id: Math.ceil(Math.random() * 100),
     });
     return response.data;
   } catch (error) {
-    return Promise.reject(error);
+    return error;
   }
 };
 
-interface Event {
-  event: "confirm" | "cancel" | "deliver";
+export interface OrderEvent {
+  event: "confirm" | "cancel" | "payment";
 }
 
 const changeStatus = async (id: number, event: Event) => {
   try {
-    const response = await instance.patch(`order/${id}`, event);
+    const response = await instance.patch(`order/${id}`, { event: event });
     return response.data;
   } catch (error) {
     return Promise.reject(error);

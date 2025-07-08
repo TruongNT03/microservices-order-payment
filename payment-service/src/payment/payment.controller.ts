@@ -8,7 +8,7 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @MessagePattern('payment')
-  handlePayment(@Payload() data: { PIN: string }) {
-    return this.paymentService.handlePayment(data);
+  handlePayment() {
+    return this.paymentService.handlePayment();
   }
 }

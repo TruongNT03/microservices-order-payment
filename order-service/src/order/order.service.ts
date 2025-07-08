@@ -13,11 +13,11 @@ import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { EventsGateway } from 'src/event/events.gateway';
 import { paginate } from 'src/commom/ultis/paginate';
 import { QueryOrderDto } from './dto/getAll.dto';
-import { Request } from 'express';
 import { PaymentResultStatus } from 'src/commom/constants/payment-result-status.enum';
 import { OrderStatus } from 'src/commom/constants/order-status.enum';
 import { UpdateOrderDto } from './dto/UpdateOrder.dto';
-import { getNextState } from './state/order-status.machine';
+import { getNextState, OrderEvents } from './state/order-status.machine';
+import { Request } from 'express';
 
 @Injectable()
 export class OrderService {
@@ -29,43 +29,17 @@ export class OrderService {
     private readonly eventGateway: EventsGateway,
   ) {}
 
-  async create(dto: CreateOrderDto) {
-    // let result: { status: string };
-    // try {
-    //   result = await this.paymentClient
-    //     .send('payment', { PIN: dto.PIN })
-    //     .toPromise();
-    // } catch (error) {
-    //   throw new RpcException('Error');
-    // }
-
-    const order = await this.orderRepo.save({
-      user_id: dto.user_id,
+  async create(dto: CreateOrderDto, req: Request) {
+    const user: any = req.user;
+    const order = this.orderRepo.create({
+      user_id: user.id,
       product_id: dto.product_id,
     });
-    // // Neu bi tu choi
-    // if (result.status === PaymentResultStatus.DECLINED) {
-    //   order.status = OrderStatus.CANCELLED;
-    //   await this.orderRepo.save(order);
-    //   throw new BadRequestException('Order bị từ chối!');
-    // }
-    // // Thanh cong
-    // if (result.status === PaymentResultStatus.CONFIRMED) {
-    //   order.status = OrderStatus.CONFIRMED;
-    //   await this.orderRepo.save(order);
-    //   setTimeout(async () => {
-    //     order.status = OrderStatus.DELIVERED;
-    //     await this.orderRepo.save(order);
-    //     this.eventGateway.emitOrderStatusUpdate();
-    //     this.eventGateway.emitMessage(
-    //       `Đơn hàng #${order.id} đã được vận chuyển!`,
-    //     );
-    //   }, 5000);
+    await this.orderRepo.save(order);
     return {
       message: 'Tạo mới order thành công!',
       data: order,
     };
-    // }
   }
 
   async update(id: number, updateOrderDto: UpdateOrderDto) {
@@ -78,12 +52,46 @@ export class OrderService {
       throw new NotFoundException('Không tồn tại order!');
     }
     const nextStatus = getNextState(order.status, updateOrderDto.event);
+
+    if (updateOrderDto.event === OrderEvents.CONFIRM) {
+      let result: { status: 'declined' | 'confirmed' };
+      try {
+        result = await this.paymentClient.send('payment', {}).toPromise();
+      } catch (error) {
+        throw new RpcException('Error');
+      }
+      if (result.status === 'confirmed') {
+        order.status = nextStatus;
+        await this.orderRepo.save(order);
+        setTimeout(async () => {
+          order.status = OrderStatus.DELIVERED;
+          await this.orderRepo.save(order);
+          this.eventGateway.emitOrderStatusUpdate(order.user_id);
+          this.eventGateway.emitMessage(
+            `Đơn hàng #${order.id} đã được vận chuyển!`,
+            order.user_id,
+          );
+        }, 5000);
+        return { message: 'Đơn hàng đã được xác nhận', data: order };
+      } else {
+        order.status = OrderStatus.CANCELLED;
+        await this.orderRepo.save(order);
+        return {
+          message: 'Đơn hàng bị từ chối',
+          data: order,
+        };
+      }
+    }
     order.status = nextStatus;
     await this.orderRepo.save(order);
-    return order;
+    return {
+      message: `Trạng thái đơn hàng được cập nhập: ${nextStatus}`,
+      data: order,
+    };
   }
 
   async getAll(q: QueryOrderDto, req: Request): Promise<any> {
+    const user: any = req.user;
     const {
       page = 1,
       limit = 10,
@@ -94,6 +102,11 @@ export class OrderService {
     } = q;
     // Chi khoi tao chua tao dieu kien
     const queryBuilder = this.orderRepo.createQueryBuilder('order');
+
+    // ID cua user
+    queryBuilder.andWhere({
+      user_id: user.id,
+    });
 
     // Bo loc
     filter !== 'all' &&

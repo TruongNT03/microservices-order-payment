@@ -19,12 +19,6 @@ interface RegisterResponse {
   timestamp: Date;
 }
 
-interface Error {
-  message: string;
-  error: string;
-  statusCode: number;
-}
-
 const register = async (
   registerSchema: RegisterSchema
 ): Promise<RegisterResponse | any> => {

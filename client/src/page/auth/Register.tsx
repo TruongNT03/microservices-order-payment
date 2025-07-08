@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as User from "../../services/User";
 import { toast, Toaster } from "sonner";
 import { useNavigate } from "react-router";
+import { Link } from "react-router-dom";
 
 const registerSchema = z
   .object({
@@ -177,9 +178,9 @@ const Register = () => {
         {/* Register */}
         <div className="text-sm text-center mt-6">
           Do have an account?{" "}
-          <a href="login" className="font-semibold hover:underline">
+          <Link to="/login" className="font-semibold hover:underline">
             Sign in
-          </a>
+          </Link>
         </div>
       </div>
     </div>

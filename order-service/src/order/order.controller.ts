@@ -6,7 +6,6 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Put,
   Query,
   Req,
   UseFilters,
@@ -17,8 +16,9 @@ import { CreateOrderDto } from './dto/createOrder.dto';
 import { HttpExceptionFilter } from 'src/commom/exception/http-exception.filter';
 import { QueryOrderDto } from './dto/getAll.dto';
 import { ServiceExceptionFilter } from 'src/commom/exception/rpc-exception.filter';
-import { Request } from 'express';
 import { UpdateOrderDto } from './dto/UpdateOrder.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { Request } from 'express';
 
 @Controller('order')
 @UseFilters(new HttpExceptionFilter())
@@ -26,9 +26,10 @@ import { UpdateOrderDto } from './dto/UpdateOrder.dto';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post('')
-  async create(@Body() dto: CreateOrderDto) {
-    return this.orderService.create(dto);
+  async create(@Body() createDto: CreateOrderDto, @Req() req: Request) {
+    return this.orderService.create(createDto, req);
   }
 
   @Patch(':id')
@@ -36,6 +37,7 @@ export class OrderController {
     return this.orderService.update(+id, updateOrderDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('')
   getAll(@Query() q: QueryOrderDto, @Req() req: Request): any {
     return this.orderService.getAll(q, req);

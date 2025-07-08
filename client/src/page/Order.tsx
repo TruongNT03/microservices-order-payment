@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/pagination";
 
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -41,22 +40,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
-
 import { Toaster, toast } from "sonner";
 import io from "socket.io-client";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { GoArrowSwitch } from "react-icons/go";
 
 import { convertDate } from "@/ultis/convertDate";
 import { UppercaseFirstLetter } from "@/ultis/UppercaseFisrtLetter";
-import { getAll, create, changeStatus, getById } from "@/services/Order";
+import {
+  getAll,
+  create,
+  changeStatus,
+  getById,
+  type OrderEvent,
+} from "@/services/Order";
 import { useQuery } from "@tanstack/react-query";
+import { getNextState } from "@/ultis/OrderStateMachine";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Order {
   id: number;
@@ -75,9 +76,15 @@ const listStatus = {
   cancelled: "Cancelled",
 };
 
-const socket = io("http://127.0.0.1:8080", {});
+const socket = io("http://127.0.0.1:8080", {
+  auth: {
+    access_token: localStorage.getItem("access_token"),
+  },
+});
 
 const Order = () => {
+  const navigate = useNavigate();
+
   // Search Params
   const [searchParams, setSearchParams] = useSearchParams();
   const keyword = searchParams.get("keyword") || "";
@@ -85,8 +92,6 @@ const Order = () => {
   const filter = searchParams.get("filter") || "all";
   const orderBy = searchParams.get("orderBy") || "id";
   const sortBy = searchParams.get("sortBy") || "asc";
-  // States
-  const [PIN, setPIN] = useState<string>("");
   // Tanstack
   const { data, refetch } = useQuery({
     queryKey: ["order", { keyword, page, filter, orderBy, sortBy }],
@@ -136,37 +141,36 @@ const Order = () => {
     switch (status) {
       case "created":
         return "outline";
-        break;
       case "confirmed":
         return "default";
-        break;
       case "delivered":
         return "secondary";
-        break;
       case "cancelled":
         return "destructive";
-        break;
       default:
         return "default";
-        break;
     }
   };
-  const handleCancel = async (id: number) => {
-    await changeStatus(id, { event: "cancel" });
-    refetch();
-    toast("Thông báo", {
-      description: "Hủy đơn hàng thành công!",
-      action: {
-        label: "Undo",
-        onClick: () => console.log("Undo"),
-      },
-    });
+  const handleVariantAction = (action: string) => {
+    switch (action) {
+      case "payment":
+        return "secondary";
+
+      case "confirm":
+        return "default";
+
+      case "cancel":
+        return "destructive";
+
+      default:
+        return "default";
+    }
   };
-  const handleConfirm = async (id: number) => {
-    await changeStatus(id, { event: "confirm" });
+  const handleAction = async (id: number, event: OrderEvent | any) => {
+    const response = await changeStatus(id, event);
     refetch();
     toast("Thông báo", {
-      description: "Xác nhận đơn hàng thành công!",
+      description: response.message,
       action: {
         label: "Undo",
         onClick: () => console.log("Undo"),
@@ -174,14 +178,27 @@ const Order = () => {
     });
   };
   const handleCreate = async () => {
-    await create(PIN);
+    const response = await create();
+    toast("Thông báo", {
+      description: response.message,
+      duration: 2000,
+      action: {
+        label: "Undo",
+        onClick: () => console.log("Undo"),
+      },
+    });
     refetch();
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    navigate("/login");
   };
 
   return (
     <div className="w-full">
       <div className="w-full flex justify-end pt-5 pr-5">
-        <Button variant="outline" className="">
+        <Button variant="outline" className="" onClick={handleLogout}>
           Logout
         </Button>
       </div>
@@ -219,42 +236,46 @@ const Order = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <AlertDialog
-            onOpenChange={(open) => {
-              !open && setPIN("");
-            }}
-          >
+          <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="default">Create Order</Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="text-sm">
               <AlertDialogHeader>
-                <AlertDialogTitle>TẠO MỚI ORDER</AlertDialogTitle>
-                <div className="mx-auto">
-                  <Label htmlFor="input" className="mb-4">
-                    Nhập mã PIN để tạo order:
-                  </Label>
-                  <InputOTP
-                    maxLength={4}
-                    id="input"
-                    value={PIN}
-                    onChange={(value) => setPIN(value)}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                    </InputOTPGroup>
-                  </InputOTP>
+                <AlertDialogTitle className="mb-5">
+                  TẠO MỚI ORDER
+                </AlertDialogTitle>
+                <div className="flex items-center gap-5">
+                  <div className="flex-[1]">Chọn sản phẩm:</div>
+                  <div className="flex-[2]">
+                    <Select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a fruit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Products</SelectLabel>
+                          <SelectItem value="apple">Product 1</SelectItem>
+                          <SelectItem value="banana">Product 2</SelectItem>
+                          <SelectItem value="blueberry">Product 3</SelectItem>
+                          <SelectItem value="grapes">Product 4</SelectItem>
+                          <SelectItem value="pineapple">Product 5</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-
-                <div className="text-center text-sm">
-                  {PIN === "" ? (
-                    <>Enter your one-time password.</>
-                  ) : (
-                    <>You entered: {PIN}</>
-                  )}
+                <div className="flex items-center gap-5">
+                  <div className="flex-[1]">Số lượng:</div>
+                  <div className="flex-[2]">
+                    <Input></Input>
+                  </div>
+                </div>
+                <div className="flex items-center gap-5">
+                  <div className="flex-[1]">Ghi chú:</div>
+                  <div className="flex-[2]">
+                    <Textarea />
+                  </div>
                 </div>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -378,30 +399,18 @@ const Order = () => {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                  <Button
-                    onClick={() => {
-                      handleConfirm(order.id);
-                    }}
-                    variant="secondary"
-                    className={`cursor-pointer ml-5 ${
-                      order.status === "created" ? "" : "hidden"
-                    }`}
-                  >
-                    Confirm
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      handleCancel(order.id);
-                    }}
-                    variant="destructive"
-                    className={`cursor-pointer ml-5 ${
-                      order.status === "created" || order.status === "confirmed"
-                        ? ""
-                        : "hidden"
-                    }`}
-                  >
-                    Cancel
-                  </Button>
+                  {getNextState(order.status)?.map((value, index) => (
+                    <Button
+                      key={index}
+                      onClick={() => {
+                        handleAction(order.id, value.event);
+                      }}
+                      variant={handleVariantAction(value.event)}
+                      className={`cursor-pointer ml-5`}
+                    >
+                      {UppercaseFirstLetter(value.event)}
+                    </Button>
+                  ))}
                 </TableCell>
               </TableRow>
             ))}

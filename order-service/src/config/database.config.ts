@@ -12,7 +12,7 @@ export const getDatabaseConfig = (
     password: configService.get<string>('DB_PASSWORD'),
     database: configService.get<string>('DB_NAME'),
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-    migrations: ['src/migrations/*.ts'],
-    synchronize: true,
+    synchronize: false,
+    logging: true,
   };
 };
