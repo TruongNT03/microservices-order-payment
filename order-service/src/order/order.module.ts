@@ -9,14 +9,18 @@ import { OrderService } from './order.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { EventsGateway } from 'src/event/events.gateway';
 import { AuthenMiddleware } from 'src/commom/middleware/authen.middleware';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtService } from '@nestjs/jwt';
+import { CacheService } from 'src/cache/cache.service';
+import { CacheModule } from 'src/cache/cache.module';
+import { EventsModule } from 'src/event/events.module';
 
 @Module({
   imports: [
     AuthModule,
+    CacheModule,
+    EventsModule,
     TypeOrmModule.forFeature([Order]),
     ClientsModule.register([
       {
@@ -27,7 +31,7 @@ import { JwtService } from '@nestjs/jwt';
     ]),
   ],
   controllers: [OrderController],
-  providers: [OrderService, EventsGateway, JwtService],
+  providers: [OrderService, JwtService, CacheService],
 })
 export class OrderModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { OrderModule } from './order/order.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -6,7 +7,7 @@ import { EventsModule } from './event/events.module';
 import { DatabaseModule } from './database/database.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from '@nestjs/config';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ConfigModule } from '@nestjs/config';
     OrderModule,
     UserModule,
     AuthModule,
+    CacheModule,
   ],
   controllers: [AppController],
   providers: [AppService],
