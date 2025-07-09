@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
@@ -51,10 +52,6 @@ export class UserService {
     };
   }
 
-  findAll() {
-    return `This action returns all user`;
-  }
-
   async findOne(username: string) {
     const user = await this.userRepo.findOne({
       where: {
@@ -62,16 +59,8 @@ export class UserService {
       },
     });
     if (!user) {
-      throw new NotFoundException('Không tồn tại tài khoản!');
+      throw new UnauthorizedException('Tài khoản mật khẩu không chính xác!');
     }
     return user;
-  }
-
-  update(id: number, updateUserDto: any) {
-    return `This action updates a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
   }
 }

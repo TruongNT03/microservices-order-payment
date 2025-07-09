@@ -1,4 +1,4 @@
-import { IsInteger, IsString } from 'class-validate';
+import { IsInteger } from 'class-validate';
 
 export class CreateOrderDto {
   @IsInteger()

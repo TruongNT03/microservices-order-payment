@@ -18,13 +18,14 @@ import { OrderStatus } from 'src/commom/constants/order-status.enum';
 import { UpdateOrderDto } from './dto/UpdateOrder.dto';
 import { getNextState, OrderEvents } from './state/order-status.machine';
 import { Request } from 'express';
+import { Constant } from './order.contanst';
 
 @Injectable()
 export class OrderService {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
-    @Inject('PAYMENT_SERVICE')
+    @Inject(Constant.PaymentServiceName)
     private paymentClient: ClientProxy,
     private readonly eventGateway: EventsGateway,
   ) {}

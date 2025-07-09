@@ -32,6 +32,7 @@ export class OrderController {
     return this.orderService.create(createDto, req);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.orderService.update(+id, updateOrderDto);
@@ -43,6 +44,7 @@ export class OrderController {
     return this.orderService.getAll(q, req);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   getById(@Param('id', ParseIntPipe) id: number) {
     return this.orderService.getById(id);

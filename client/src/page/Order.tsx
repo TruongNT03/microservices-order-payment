@@ -122,7 +122,7 @@ const Order = () => {
 
   useEffect(() => {
     socket.on("connect", () => {});
-    socket.on("message", (message) => {
+    socket.on("order.message", (message) => {
       console.log(message);
       toast("Thông báo", {
         description: message,
@@ -132,7 +132,7 @@ const Order = () => {
         },
       });
     });
-    socket.on("event", async () => {
+    socket.on("order.update", async () => {
       refetch();
     });
   }, []);

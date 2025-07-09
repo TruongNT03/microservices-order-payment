@@ -9,11 +9,13 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { CacheService } from 'src/cache/cache.service';
+import { Constant } from './event.constant';
+import { ConfigService } from '@nestjs/config';
 
-export interface OnlineUser {
-  user: any;
-  socket_id: string;
-}
+// export interface OnlineUser {
+//   user: any;
+//   socket_id: string;
+// }
 
 @WebSocketGateway({
   cors: {
@@ -28,6 +30,7 @@ export class EventsGateway
   constructor(
     private jwtService: JwtService,
     private cacheService: CacheService,
+    private configSevice: ConfigService,
   ) {}
 
   // private static onlineUser: OnlineUser[] = [];
@@ -44,7 +47,7 @@ export class EventsGateway
 
     try {
       const user = this.jwtService.verify(client.handshake.auth.access_token, {
-        secret: 'abc',
+        secret: this.configSevice.get<string>('JWT_SECRET') || 'abc',
       });
       // EventsGateway.onlineUser.push({
       //   user: user,
@@ -65,7 +68,7 @@ export class EventsGateway
     const userEmit = await this.cacheService.get(user_id.toString());
     if (userEmit) {
       userEmit.forEach((value) =>
-        this.server.to(value.client_id).emit('event', {}),
+        this.server.to(value.client_id).emit(Constant.OrderUpdateEvent, {}),
       );
       // this.server.to(userEmit).emit('event', {});
     }
@@ -78,7 +81,9 @@ export class EventsGateway
     // );
     if (userEmit) {
       userEmit.forEach((value) =>
-        this.server.to(value.client_id).emit('message', message),
+        this.server
+          .to(value.client_id)
+          .emit(Constant.OrderMessageEvent, message),
       );
     }
   }

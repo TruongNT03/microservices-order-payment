@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   Entity,
   OneToMany,
-  JoinColumn,
 } from 'typeorm';
 
 @Entity({ name: 'users' })

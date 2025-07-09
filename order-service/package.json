@@ -39,7 +39,6 @@
     "@types/passport-local": "^1.0.38",
     "bcrypt": "^6.0.0",
     "cache-manager": "^7.0.1",
-    "cache-manager-redis-store": "^3.0.1",
     "cacheable": "^1.10.1",
     "class-transformer": "^0.5.1",
     "class-validate": "^0.0.1",
