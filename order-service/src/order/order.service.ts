@@ -19,6 +19,7 @@ import { UpdateOrderDto } from './dto/UpdateOrder.dto';
 import { getNextState, OrderEvents } from './state/order-status.machine';
 import { Request } from 'express';
 import { Constant } from './order.contanst';
+import { MailService } from 'src/nodemailer/mail.service';
 
 @Injectable()
 export class OrderService {
@@ -28,6 +29,7 @@ export class OrderService {
     @Inject(Constant.PaymentServiceName)
     private paymentClient: ClientProxy,
     private readonly eventGateway: EventsGateway,
+    private mailService: MailService,
   ) {}
 
   async create(dto: CreateOrderDto, req: Request) {
@@ -67,6 +69,7 @@ export class OrderService {
         setTimeout(async () => {
           order.status = OrderStatus.DELIVERED;
           await this.orderRepo.save(order);
+          await this.mailService.sendMail();
           this.eventGateway.emitOrderStatusUpdate(order.user_id);
           this.eventGateway.emitMessage(
             `Đơn hàng #${order.id} đã được vận chuyển!`,

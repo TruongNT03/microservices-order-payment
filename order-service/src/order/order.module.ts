@@ -10,6 +10,7 @@ import { CacheService } from 'src/cache/cache.service';
 import { CacheModule } from 'src/cache/cache.module';
 import { EventsModule } from 'src/event/events.module';
 import { Constant } from './order.contanst';
+import { MailService } from 'src/nodemailer/mail.service';
 
 @Module({
   imports: [
@@ -29,6 +30,6 @@ import { Constant } from './order.contanst';
     ]),
   ],
   controllers: [OrderController],
-  providers: [OrderService, JwtService, CacheService],
+  providers: [OrderService, JwtService, CacheService, MailService],
 })
 export class OrderModule {}
