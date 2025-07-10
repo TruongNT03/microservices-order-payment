@@ -7,6 +7,7 @@ import {
   Entity,
   OneToMany,
 } from 'typeorm';
+import { LoginType } from '../user.constant';
 
 @Entity({ name: 'users' })
 export class User {
@@ -15,6 +16,7 @@ export class User {
 
   @Column({
     unique: true,
+    nullable: true,
   })
   username: string;
 
@@ -23,8 +25,17 @@ export class User {
   })
   email: string;
 
-  @Column()
+  @Column({
+    nullable: true,
+  })
   password: string;
+
+  @Column({
+    type: 'enum',
+    default: LoginType.LOCAL,
+    enum: LoginType,
+  })
+  type: LoginType;
 
   @CreateDateColumn()
   created_at: Date;

@@ -4,6 +4,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { map, Observable } from 'rxjs';
 
 @Injectable()
@@ -16,7 +17,7 @@ export class ResponseIntercepter implements NestInterceptor {
       map((data) => ({
         success: true,
         message: data.message,
-        statusCode: context.switchToHttp().getResponse().statusCode,
+        statusCode: context.switchToHttp().getResponse<Response>().statusCode,
         data: data,
         timestamp: new Date().toISOString(),
       })),

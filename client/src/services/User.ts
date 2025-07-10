@@ -43,10 +43,10 @@ interface LoginResponse {
   statusCode: number;
   data: {
     id: number;
-    username: string;
+    username?: string;
     email: string;
-    created_at: Date;
-    updated_at: Date;
+    created_at?: Date;
+    updated_at?: Date;
     access_token: string;
   };
   timestamp: Date;
@@ -67,4 +67,14 @@ const login = async (
   }
 };
 
-export { register, login };
+const googleLogin = async (): Promise<LoginResponse | any> => {
+  try {
+    const response: LoginResponse = await instance.get("auth/google/login");
+    localStorage.setItem("access_token", response.data.access_token);
+    return response;
+  } catch (error: any) {
+    return error.response.data;
+  }
+};
+
+export { register, login, googleLogin };

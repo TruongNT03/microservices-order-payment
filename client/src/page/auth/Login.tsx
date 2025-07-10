@@ -7,6 +7,8 @@ import * as User from "@/services/User";
 import { useNavigate } from "react-router";
 import { toast, Toaster } from "sonner";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { FaGoogle } from "react-icons/fa";
 
 const loginSchema = z.object({
   username: z.string(),
@@ -35,18 +37,23 @@ const Login = () => {
     }
   };
   return (
-    <div className="w-screen h-screen flex justify-center items-center text-black bg-slate-100">
+    <div className="w-screen h-screen bg-[url(unsplash.jpg)] bg-cover flex justify-center items-center text-white bg-slate-100">
       <Toaster position="top-right" />
-      <div className="w-[400px] h-fit  border border-black/20 rounded-2xl p-6 flex flex-col bg-white">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-[400px] h-fit rounded-2xl p-6 flex flex-col bg-transparent backdrop-brightness-150 backdrop-blur-md border-white border-[1px]"
+      >
         <h2 className="text-2xl font-semibold text-center mb-8">Sign In</h2>
         <form action="" onSubmit={handleSubmit(onSubmit)}>
           {/* Username */}
-          <div className="relative w-[310px] mx-auto mb-6 border-b-2 border-black/20">
+          <div className="relative w-[310px] mx-auto mb-6 border-b-2 border-white">
             <input
               {...register("username")}
               type="text"
               required
-              className="w-full h-12 bg-transparent outline-none border-none text-black px-1 pt-5 peer"
+              className="w-full h-12 bg-transparent outline-none border-none px-1 pt-5 peer"
             />
             <label
               className="absolute left-1 top-4 e text-md pointer-events-none transition-all duration-300
@@ -57,7 +64,7 @@ const Login = () => {
           </div>
 
           {/* Password */}
-          <div className="relative w-[310px] mx-auto mb-6 border-b-2 border-black/20">
+          <div className="relative w-[310px] mx-auto mb-6 border-b-2 border-white">
             <input
               {...register("password")}
               type={passwordVisible ? "text" : "password"}
@@ -82,12 +89,27 @@ const Login = () => {
           <div className="px-5 mt-6">
             <button
               type="submit"
-              className="w-full h-10 bg-black cursor-pointer text-white rounded-sm font-semibold active:opacity-10 hover:opacity-60 transition"
+              className="w-full h-10 bg-black cursor-pointer text-white rounded-sm font-semibold active:opacity-10 hover:bg-stone-800 transition"
             >
               Submit
             </button>
           </div>
         </form>
+
+        <div className="text-center mt-2">or</div>
+
+        {/* Google Login*/}
+        <a
+          className="px-5 mt-2"
+          href="http://localhost:8080/api/v1/auth/google/login"
+        >
+          <button
+            type="button"
+            className="w-full h-10 bg-red-700 flex justify-center items-center cursor-pointer text-white rounded-sm font-semibold active:opacity-10 hover:bg-red-800 transition"
+          >
+            <FaGoogle />
+          </button>
+        </a>
 
         {/* Register */}
         <div className="text-sm text-center mt-6">
@@ -96,7 +118,7 @@ const Login = () => {
             Sign up
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

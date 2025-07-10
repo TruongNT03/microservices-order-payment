@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -8,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { LoginType } from './user.constant';
 
 @Injectable()
 export class UserService {
@@ -60,6 +62,27 @@ export class UserService {
     });
     if (!user) {
       throw new UnauthorizedException('Tài khoản mật khẩu không chính xác!');
+    }
+    return user;
+  }
+
+  async findOrCreateByEmail(email: string | any) {
+    let user: User | any;
+    try {
+      user = await this.userRepo.findOne({
+        where: {
+          email,
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Goggle Login: email is undefind');
+    }
+    if (!user) {
+      user = this.userRepo.create({
+        email: email,
+        type: LoginType.GOOGLE,
+      });
+      await this.userRepo.save(user);
     }
     return user;
   }

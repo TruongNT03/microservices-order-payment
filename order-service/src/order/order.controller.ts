@@ -17,7 +17,7 @@ import { HttpExceptionFilter } from 'src/commom/exception/http-exception.filter'
 import { QueryOrderDto } from './dto/getAll.dto';
 import { ServiceExceptionFilter } from 'src/commom/exception/rpc-exception.filter';
 import { UpdateOrderDto } from './dto/UpdateOrder.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { Request } from 'express';
 
 @Controller('order')
