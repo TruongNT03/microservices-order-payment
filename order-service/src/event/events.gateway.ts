@@ -47,34 +47,31 @@ export class EventsGateway
       console.log(`user_id: ${user.id}`);
 
       this.cacheService.set(user.id.toString(), client.id);
+      // console.log(await this.cacheService.get(user.id.toString()));
     } catch (error) {
       throw new UnauthorizedException('Token không hợp lệ.');
     }
   }
 
   async emitOrderStatusUpdate(user_id: number) {
-    const userEmit = await this.cacheService.get(user_id.toString());
-    console.log('User emit: ', userEmit);
-    if (userEmit) {
-      userEmit.forEach((value) => {
-        (this.server.to(value.client_id).emit(Constant.OrderUpdateEvent, {}),
-          console.log(`Đã emit tới client_id: ${value.client_id}
-                       Với user_id: ${user_id}`));
-      });
+    const socketIds: string[] = await this.cacheService.get(user_id.toString()); // Giờ đây là string[]
+    console.log('User emit socket IDs: ', socketIds);
+    if (socketIds && socketIds.length > 0) {
+      // Socket.IO cho phép truyền trực tiếp mảng socket ID vào .to()
+      this.server.to(socketIds).emit(Constant.OrderUpdateEvent, {});
+      console.log(
+        `Đã emit tới các client_id: ${socketIds.join(', ')} của user_id: ${user_id}`,
+      );
     }
   }
 
   async emitMessage(message: string, user_id: number) {
-    const userEmit = await this.cacheService.get(user_id.toString());
-
-    if (userEmit) {
-      userEmit.forEach((value) => {
-        (this.server
-          .to(value.client_id)
-          .emit(Constant.OrderMessageEvent, message),
-          console.log(`Đã emit tới client_id: ${value.client_id}
-                       Với user_id: ${user_id}`));
-      });
+    const socketIds: string[] = await this.cacheService.get(user_id.toString()); // Giờ đây là string[]
+    if (socketIds && socketIds.length > 0) {
+      this.server.to(socketIds).emit(Constant.OrderMessageEvent, message);
+      console.log(
+        `Đã emit tới các client_id: ${socketIds.join(', ')} của user_id: ${user_id}`,
+      );
     }
   }
 
@@ -84,5 +81,8 @@ export class EventsGateway
       client.id,
     );
     console.log('Client disconnected ' + client.id);
+    // console.log(
+    //   await this.cacheService.get(client.handshake.auth.user_id.toString()),
+    // );
   }
 }

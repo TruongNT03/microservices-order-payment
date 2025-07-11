@@ -1,42 +1,48 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { Cacheable } from 'cacheable';
+import {
+  Inject,
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createClient, RedisClientType } from 'redis';
 
 export interface ConnectedUser {
   client_id: string;
 }
 
 @Injectable()
-export class CacheService {
-  constructor(@Inject('CACHE_INSTANCE') private readonly cache: Cacheable) {}
+export class CacheService implements OnModuleInit, OnModuleDestroy {
+  constructor(private configService: ConfigService) {}
+  private redisClient: RedisClientType;
 
-  async get(key: string): Promise<ConnectedUser[]> {
-    const listClientId: ConnectedUser[] = (await this.cache.get(key)) ?? [];
-    return listClientId;
+  async onModuleInit() {
+    this.redisClient = createClient({
+      url: this.configService.get<string>('REDIS_URL'),
+    });
+    this.redisClient.on('error', (err) =>
+      console.error('Redis Client Error', err),
+    );
+    await this.redisClient.connect();
+  }
+
+  async onModuleDestroy() {
+    await this.redisClient.quit();
+  }
+
+  async get(key: string): Promise<string[]> {
+    // sMembers trả về tất cả thành viên của một Set
+    return this.redisClient.sMembers(key);
   }
 
   async set(key: string, value: string): Promise<void> {
-    // Lấy ra danh sách client_id của user_id
-    // Nếu chưa có khởi tạo bằng []
-    const userList: ConnectedUser[] = (await this.cache.get(key)) ?? [];
-    userList.push({ client_id: value });
-    await this.cache.set(key, userList);
+    // sAdd thêm một hoặc nhiều thành viên vào Set.
+    // Thao tác này an toàn, không bị race condition.
+    await this.redisClient.sAdd(key, value);
   }
 
   async delete(key: string, value: string): Promise<void> {
-    const userList: ConnectedUser[] | undefined = await this.cache.get(key);
-    // Nếu không tồn tại
-    if (!userList) {
-      return;
-    }
-    // Nếu user chỉ kết nối 1 thiết bị
-    if (userList.length === 1) {
-      await this.cache.delete(key);
-      return;
-    }
-    // Nếu user kết nối nhiều thiết bị
-    const newUserList = userList.filter(
-      (connectedUser) => connectedUser.client_id !== value,
-    );
-    await this.cache.set(key, newUserList);
+    // sRem xóa một hoặc nhiều thành viên khỏi Set.
+    await this.redisClient.sRem(key, value);
   }
 }
