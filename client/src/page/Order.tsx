@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/select";
 
 import { Toaster, toast } from "sonner";
-import io from "socket.io-client";
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GoArrowSwitch } from "react-icons/go";
@@ -58,6 +57,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getNextState } from "@/ultis/OrderStateMachine";
 import { Textarea } from "@/components/ui/textarea";
+import { socket } from "../socket/socket";
+import Cookies from "js-cookie";
 
 interface Order {
   id: number;
@@ -76,13 +77,12 @@ const listStatus = {
   cancelled: "Cancelled",
 };
 
-const socket = io("http://127.0.0.1:8080", {
-  auth: {
-    access_token: localStorage.getItem("access_token"),
-  },
-});
-
 const Order = () => {
+  socket.auth = {
+    access_token:
+      localStorage.getItem("access_token") || Cookies.get("access_token"),
+  };
+  socket.connect();
   const navigate = useNavigate();
 
   // Search Params
@@ -192,6 +192,7 @@ const Order = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
+    socket.disconnect();
     navigate("/login");
   };
 

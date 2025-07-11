@@ -9,19 +9,20 @@ export interface ConnectedUser {
 export class CacheService {
   constructor(@Inject('CACHE_INSTANCE') private readonly cache: Cacheable) {}
 
-  async get(key: string): Promise<ConnectedUser[] | []> {
-    return (await this.cache.get(key)) || [];
+  async get(key: string): Promise<ConnectedUser[]> {
+    const listClientId: ConnectedUser[] = (await this.cache.get(key)) ?? [];
+    return listClientId;
   }
 
-  async set(key: string, value: any): Promise<any> {
+  async set(key: string, value: string): Promise<void> {
     // Lấy ra danh sách client_id của user_id
     // Nếu chưa có khởi tạo bằng []
-    const userList: ConnectedUser[] = (await this.cache.get(key)) || [];
+    const userList: ConnectedUser[] = (await this.cache.get(key)) ?? [];
     userList.push({ client_id: value });
-    return await this.cache.set(key, userList);
+    await this.cache.set(key, userList);
   }
 
-  async delete(key: string, value: string): Promise<any> {
+  async delete(key: string, value: string): Promise<void> {
     const userList: ConnectedUser[] | undefined = await this.cache.get(key);
     // Nếu không tồn tại
     if (!userList) {
@@ -29,7 +30,8 @@ export class CacheService {
     }
     // Nếu user chỉ kết nối 1 thiết bị
     if (userList.length === 1) {
-      this.cache.delete(key);
+      await this.cache.delete(key);
+      return;
     }
     // Nếu user kết nối nhiều thiết bị
     const newUserList = userList.filter(

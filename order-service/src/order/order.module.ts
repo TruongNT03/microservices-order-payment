@@ -11,13 +11,16 @@ import { CacheModule } from 'src/cache/cache.module';
 import { EventsModule } from 'src/event/events.module';
 import { Constant } from './order.contanst';
 import { MailService } from 'src/nodemailer/mail.service';
+import { UserService } from 'src/user/user.service';
+import { User } from 'src/user/entities/user.entity';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
   imports: [
     AuthModule,
     CacheModule,
     EventsModule,
-    TypeOrmModule.forFeature([Order]),
+    TypeOrmModule.forFeature([Order, User]),
     ClientsModule.register([
       {
         name: Constant.PaymentServiceName,

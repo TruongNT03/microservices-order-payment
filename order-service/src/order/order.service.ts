@@ -20,12 +20,15 @@ import { getNextState, OrderEvents } from './state/order-status.machine';
 import { Request } from 'express';
 import { Constant } from './order.contanst';
 import { MailService } from 'src/nodemailer/mail.service';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class OrderService {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     @Inject(Constant.PaymentServiceName)
     private paymentClient: ClientProxy,
     private readonly eventGateway: EventsGateway,
@@ -54,6 +57,16 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException('Không tồn tại order!');
     }
+    const user = await this.userRepo.findOne({
+      where: {
+        id: order.user_id,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tồn tại user');
+    }
+
     const nextStatus = getNextState(order.status, updateOrderDto.event);
 
     if (updateOrderDto.event === OrderEvents.CONFIRM) {
@@ -69,9 +82,14 @@ export class OrderService {
         setTimeout(async () => {
           order.status = OrderStatus.DELIVERED;
           await this.orderRepo.save(order);
-          await this.mailService.sendMail();
-          this.eventGateway.emitOrderStatusUpdate(order.user_id);
-          this.eventGateway.emitMessage(
+          // await this.mailService.sendMail(
+          //   user?.email,
+          //   'Đơn hàng đã được vận chuyển',
+          //   order.id,
+          //   user?.username,
+          // );
+          await this.eventGateway.emitOrderStatusUpdate(order.user_id);
+          await this.eventGateway.emitMessage(
             `Đơn hàng #${order.id} đã được vận chuyển!`,
             order.user_id,
           );

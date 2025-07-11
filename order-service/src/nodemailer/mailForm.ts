@@ -1,4 +1,4 @@
-export const mailContent = `
+export const mailContent = (order_id: number, name: string) => `
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -52,16 +52,13 @@ export const mailContent = `
       <h2>🚚 Đơn hàng của bạn đã được vận chuyển!</h2>
     </div>
     <div class="content">
-      <p>Xin chào <strong>Quý khách</strong>,</p>
+      <p>Xin chào <strong>${name}</strong>,</p>
 
-      <p>Chúng tôi xin thông báo rằng <strong>đơn hàng #{{orderId}}</strong> của bạn đã được bàn giao cho đơn vị vận chuyển.</p>
+      <p>Chúng tôi xin thông báo rằng <strong>đơn hàng #${order_id}</strong> của bạn đã được bàn giao cho đơn vị vận chuyển.</p>
 
       <p>Vui lòng chú ý điện thoại để nhận cuộc gọi từ shipper. Nếu không thể nhận hàng, vui lòng chuẩn bị người nhận thay hoặc liên hệ với chúng tôi để sắp xếp lại.</p>
 
-      <p>📦 Thời gian giao dự kiến: <strong>{{deliveryDate}}</strong></p>
-      <p>🏠 Địa chỉ nhận hàng: <strong>{{address}}</strong></p>
-
-      <a href="{{trackingUrl}}" class="button">Theo dõi đơn hàng</a>
+      <p>📦 Thời gian giao dự kiến: <strong>Trong vòng 2 ngày kể từ này bắt đầu vận chuyển</strong></p>
 
       <p style="margin-top: 30px;">Cảm ơn bạn đã mua sắm tại <strong>Shop của chúng tôi</strong>. Chúng tôi luôn nỗ lực để mang đến cho bạn trải nghiệm tốt nhất!</p>
     </div>

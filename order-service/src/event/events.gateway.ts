@@ -12,11 +12,6 @@ import { CacheService } from 'src/cache/cache.service';
 import { Constant } from './event.constant';
 import { ConfigService } from '@nestjs/config';
 
-// export interface OnlineUser {
-//   user: any;
-//   socket_id: string;
-// }
-
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -33,13 +28,11 @@ export class EventsGateway
     private configSevice: ConfigService,
   ) {}
 
-  // private static onlineUser: OnlineUser[] = [];
-
   afterInit(server: Server) {
     console.log('Server initialized');
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
+  async handleConnection(client: Socket, ...args: any[]) {
     if (!client.handshake.auth.access_token) {
       client.disconnect();
       return;
@@ -49,12 +42,10 @@ export class EventsGateway
       const user = this.jwtService.verify(client.handshake.auth.access_token, {
         secret: this.configSevice.get<string>('JWT_SECRET') || 'abc',
       });
-      // EventsGateway.onlineUser.push({
-      //   user: user,
-      //   socket_id: client.id,
-      // });
       client.handshake.auth.user_id = user.id;
       console.log('Client connected ' + client.id);
+      console.log(`user_id: ${user.id}`);
+
       this.cacheService.set(user.id.toString(), client.id);
     } catch (error) {
       throw new UnauthorizedException('Token không hợp lệ.');
@@ -62,29 +53,28 @@ export class EventsGateway
   }
 
   async emitOrderStatusUpdate(user_id: number) {
-    // const userEmit = EventsGateway.onlineUser.find(
-    //   (onlineUser) => onlineUser.user.id === user_id,
-    // );
     const userEmit = await this.cacheService.get(user_id.toString());
+    console.log('User emit: ', userEmit);
     if (userEmit) {
-      userEmit.forEach((value) =>
-        this.server.to(value.client_id).emit(Constant.OrderUpdateEvent, {}),
-      );
-      // this.server.to(userEmit).emit('event', {});
+      userEmit.forEach((value) => {
+        (this.server.to(value.client_id).emit(Constant.OrderUpdateEvent, {}),
+          console.log(`Đã emit tới client_id: ${value.client_id}
+                       Với user_id: ${user_id}`));
+      });
     }
   }
 
   async emitMessage(message: string, user_id: number) {
     const userEmit = await this.cacheService.get(user_id.toString());
-    // const userEmit = EventsGateway.onlineUser.find(
-    //   (onlineUser) => onlineUser.user.id === user_id,
-    // );
+
     if (userEmit) {
-      userEmit.forEach((value) =>
-        this.server
+      userEmit.forEach((value) => {
+        (this.server
           .to(value.client_id)
           .emit(Constant.OrderMessageEvent, message),
-      );
+          console.log(`Đã emit tới client_id: ${value.client_id}
+                       Với user_id: ${user_id}`));
+      });
     }
   }
 
@@ -94,8 +84,5 @@ export class EventsGateway
       client.id,
     );
     console.log('Client disconnected ' + client.id);
-    // EventsGateway.onlineUser = EventsGateway.onlineUser.filter(
-    //   (onlineUser) => onlineUser.socket_id !== client.id,
-    // );
   }
 }

@@ -14,13 +14,18 @@ export class MailService {
       pass: process.env.MAIL_PASS,
     },
   });
-  sendMail = async () => {
+  sendMail = async (
+    toMail: string,
+    subject: string,
+    order_id: number,
+    name: string,
+  ) => {
     const info = await this.transporter.sendMail({
       from: `"Cửa hàng trực tuyến" <${process.env.MAIL_USER}>`,
-      to: 'ntt26072003@gmail.com',
-      subject: 'Đơn hàng được xác nhận',
-      text: 'Hello world?', // plain‑text body
-      html: mailContent, // HTML body
+      to: toMail,
+      subject: subject,
+      html: mailContent(order_id, name),
     });
+    console.log(`Đã gửi mail xác nhận đến: ${toMail}`);
   };
 }
